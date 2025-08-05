@@ -24,6 +24,8 @@ export default function AdminDashboard() {
   };
 
   const handleSubmitResponse = () => {
+    if (!selectedRequest) return;
+    
     // Simulate sending response
     console.log("Submitting response for request", selectedRequest, responseText, imageFile);
     handleStatusChange(selectedRequest, "completed");
