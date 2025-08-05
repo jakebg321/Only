@@ -81,7 +81,7 @@ model CreatorPersonality {
   id                  String          @id @default(cuid())
   creatorId          String          @unique
   creator            Creator         @relation(fields: [creatorId], references: [id])
-  tone               PersonalityTone @default(FRIENDLY)
+  tone               PersonalityTone @default(FLIRTY)
   greetingMessage    String
   interests          String[]
   boundaries         String[]
@@ -91,6 +91,11 @@ model CreatorPersonality {
   maxResponseLength  Int             @default(500)
   enableEmojis       Boolean         @default(true)
   enableMediaSuggestions Boolean      @default(true)
+  flirtLevel         Int             @default(5)
+  explicitLevel      Int             @default(2)
+  subscriptionAcknowledgment Boolean @default(true)
+  fantasyFocus       String[]        @default([])
+  petNames           String[]        @default(["babe", "sexy", "baby"])
   createdAt          DateTime        @default(now())
   updatedAt          DateTime        @updatedAt
 }

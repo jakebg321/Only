@@ -24,10 +24,11 @@ export default function PersonalitySetup() {
     personalityTraits: [] as string[],
     interests: [] as string[],
     hobbies: [] as string[],
-    responseStyle: 'Playful and teasing',
+    responseStyle: 'Sexy and seductive',
     vocabularyLevel: 'casual',
     humorStyle: 'playful',
-    flirtLevel: 3,
+    flirtLevel: 5,
+    explicitLevel: 2,
     boundaries: [] as string[],
     neverMentions: [] as string[],
     contentTypes: [] as string[],
@@ -38,10 +39,12 @@ export default function PersonalitySetup() {
     },
     responseLength: 'medium',
     enableEmojis: true,
-    emojiFrequency: 'moderate',
+    emojiFrequency: 'frequent',
     useSlang: true,
     usePetNames: true,
-    petNames: ['babe', 'hun', 'sweetie'],
+    petNames: ['babe', 'sexy', 'baby', 'hottie'],
+    subscriptionAcknowledgment: true,
+    fantasyFocus: [] as string[],
     backstory: '',
     relationship: '',
     customInstructions: ''
@@ -54,7 +57,8 @@ export default function PersonalitySetup() {
     boundary: '',
     neverMention: '',
     contentType: '',
-    petName: ''
+    petName: '',
+    fantasy: ''
   });
 
   const addToList = (listName: keyof typeof personality, inputName: keyof typeof currentInput) => {
@@ -231,7 +235,20 @@ export default function PersonalitySetup() {
                   onChange={(e) => setPersonality({ ...personality, flirtLevel: parseInt(e.target.value) })}
                   className="w-full"
                 />
-                <span className="text-sm text-gray-400">Current: {personality.flirtLevel}</span>
+                <span className="text-sm text-gray-400">Current: {personality.flirtLevel} - {personality.flirtLevel === 0 ? 'Friendly' : personality.flirtLevel <= 2 ? 'Flirty' : personality.flirtLevel <= 4 ? 'Very Flirty' : 'Extremely Flirty'}</span>
+              </div>
+
+              <div>
+                <Label>Explicit Level (0-3)</Label>
+                <input 
+                  type="range" 
+                  min="0" 
+                  max="3" 
+                  value={personality.explicitLevel}
+                  onChange={(e) => setPersonality({ ...personality, explicitLevel: parseInt(e.target.value) })}
+                  className="w-full"
+                />
+                <span className="text-sm text-gray-400">Current: {personality.explicitLevel} - {personality.explicitLevel === 0 ? 'Teasing Only' : personality.explicitLevel === 1 ? 'Suggestive' : personality.explicitLevel === 2 ? 'Explicit' : 'Very Explicit'}</span>
               </div>
 
               <div>
@@ -280,6 +297,72 @@ export default function PersonalitySetup() {
                   </span>
                 ))}
               </div>
+            </div>
+
+            <div className="mt-4">
+              <Label>Fantasy Specialties</Label>
+              
+              {/* Preset fantasy options */}
+              <div className="mb-3">
+                <p className="text-sm text-gray-400 mb-2">Quick select:</p>
+                <div className="flex flex-wrap gap-2">
+                  {[
+                    'BDSM', 'Dominant', 'Submissive', 'Roleplay', 'Teasing', 
+                    'Feet', 'Lingerie', 'Cosplay', 'GFE (Girlfriend Experience)', 
+                    'Findom', 'JOI', 'CEI', 'Humiliation', 'Worship', 'Voyeur'
+                  ].map((fantasy) => (
+                    <button
+                      key={fantasy}
+                      onClick={() => {
+                        if (!personality.fantasyFocus.includes(fantasy)) {
+                          setPersonality({
+                            ...personality,
+                            fantasyFocus: [...personality.fantasyFocus, fantasy]
+                          });
+                        }
+                      }}
+                      className={`px-3 py-1 rounded-full text-sm transition-colors ${
+                        personality.fantasyFocus.includes(fantasy)
+                          ? 'bg-purple-600 text-white'
+                          : 'bg-gray-700 hover:bg-gray-600'
+                      }`}
+                    >
+                      {fantasy}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="flex gap-2 mb-2">
+                <Input
+                  value={currentInput.fantasy}
+                  onChange={(e) => setCurrentInput({ ...currentInput, fantasy: e.target.value })}
+                  placeholder="Add custom fantasy..."
+                  className="bg-gray-800 border-gray-600"
+                  onKeyPress={(e) => e.key === 'Enter' && addToList('fantasyFocus', 'fantasy')}
+                />
+                <Button onClick={() => addToList('fantasyFocus', 'fantasy')} size="sm">Add</Button>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {personality.fantasyFocus.map((fantasy, i) => (
+                  <span key={i} className="bg-purple-600 px-3 py-1 rounded-full text-sm cursor-pointer" onClick={() => removeFromList('fantasyFocus', i)}>
+                    {fantasy} ×
+                  </span>
+                ))}
+              </div>
+            </div>
+
+            <div className="mt-4 flex items-center gap-2">
+              <input
+                type="checkbox"
+                id="subscriptionAck"
+                checked={personality.subscriptionAcknowledgment}
+                onChange={(e) => setPersonality({ ...personality, subscriptionAcknowledgment: e.target.checked })}
+                className="rounded"
+              />
+              <Label htmlFor="subscriptionAck" className="cursor-pointer">
+                Acknowledge subscribers are paying premium (builds gratitude & tension)
+              </Label>
             </div>
           </CardContent>
         </Card>

@@ -189,3 +189,25 @@
     background: linear-gradient(to right, #1e3a8a, #6b21a8);
   }
 }
+
+/* Custom animations for typing dots */
+@keyframes pulse-dot {
+  0%, 60%, 100% {
+    opacity: 0.3;
+  }
+  30% {
+    opacity: 1;
+  }
+}
+
+.animate-pulse {
+  animation: pulse-dot 1.4s infinite ease-in-out;
+}
+
+.delay-75 {
+  animation-delay: 0.16s;
+}
+
+.delay-150 {
+  animation-delay: 0.32s;
+}

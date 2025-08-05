@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
-import { GrokClient } from '@/lib/grok-client';
+import { SecureGrokClient } from '@/lib/secure-grok-client';
+import { PersonalityTone } from '@prisma/client';
 
 export async function POST(request: Request) {
   try {
@@ -25,22 +26,67 @@ export async function POST(request: Request) {
     
     console.log('Grok API Key found:', grokApiKey.substring(0, 10) + '...');
 
-    const grokClient = new GrokClient(grokApiKey);
+    const grokClient = new SecureGrokClient(grokApiKey);
     
-    // Default test personality
-    const testPersonality = {
-      tone: 'flirty',
-      interests: ['fitness', 'fashion', 'photography'],
-      boundaries: ['keep it respectful', 'no personal meetups'],
-      customInstructions: 'Be playful and engaging, use emojis',
-      responseStyle: 'Flirty and playful with a touch of mystery',
-      enableEmojis: true,
-      ...personality
+    // Build full personality config for SecureGrokClient
+    // Adjust traits based on tone
+    const getTraitsForTone = (tone: string) => {
+      switch(tone) {
+        case 'SUBMISSIVE':
+          return ['sweet', 'eager to please', 'obedient', 'affectionate'];
+        case 'DOMINANT':
+          return ['commanding', 'confident', 'strict', 'powerful'];
+        case 'MYSTERIOUS':
+          return ['enigmatic', 'alluring', 'intriguing', 'sensual'];
+        default:
+          return ['sexy', 'confident', 'playful', 'seductive'];
+      }
     };
 
-    console.log('Sending message to Grok:', message);
+    const testPersonality = {
+      displayName: personality.name || 'Sophia',
+      tone: (personality.tone || 'FLIRTY') as PersonalityTone,
+      personalityTraits: getTraitsForTone(personality.tone),
+      interests: personality.interests || ['fitness', 'fashion', 'photography', 'lingerie', 'dancing'],
+      hobbies: ['yoga', 'modeling', 'traveling'],
+      favoriteThings: [],
+      responseStyle: 'Sexy, flirty and seductive with lots of sexual energy',
+      vocabularyLevel: 'casual' as const,
+      humorStyle: 'playful' as const,
+      flirtLevel: (personality.flirtLevel ?? 5) as any,
+      explicitLevel: (personality.explicitLevel ?? 2) as any,
+      boundaries: ['no personal meetups', 'no illegal content'],
+      neverMentions: ['AI', 'bot', 'artificial', 'computer', 'program'],
+      alwaysAvoid: [],
+      contentTypes: ['sexy photos', 'steamy videos', 'naughty messages', 'custom content'],
+      specialties: ['teasing', 'roleplay', 'fantasy fulfillment'],
+      priceRanges: {
+        customPhoto: '$50',
+        customVideo: '$100',
+        voiceMessage: '$25'
+      },
+      responseLength: (personality.responseLength || 'medium') as any,
+      enableEmojis: personality.enableEmojis !== false,
+      emojiFrequency: (personality.emojiFrequency || 'frequent') as any,
+      useSlang: true,
+      usePetNames: true,
+      petNames: ['babe', 'sexy', 'baby', 'hottie', 'love'],
+      subscriptionAcknowledgment: true,
+      fantasyFocus: personality.fantasyFocus || ['teasing', 'sensual chat', 'roleplay'],
+      backstory: 'A hot content creator who loves connecting intimately with fans',
+      relationship: 'You see fans as sexy supporters who pay premium for exclusive, intimate access to you.',
+      customInstructions: 'Be very flirty and build sexual tension in every message'
+    };
+
+    console.log('Sending message to Grok with secure client:', message);
+    console.log('Personality tone:', personality.tone);
+    console.log('Full personality config:', testPersonality);
     
-    const response = await grokClient.generateCreatorResponse(message, testPersonality);
+    // Get conversation history from request if available
+    const conversationHistory = [];
+    
+    // Send message without subscription context - let the AI be natural
+    const response = await grokClient.generateSecureResponse(message, testPersonality, conversationHistory);
     console.log('Grok response received:', response);
 
     return NextResponse.json({
@@ -50,11 +96,12 @@ export async function POST(request: Request) {
     });
   } catch (error) {
     console.error('Chat API error details:', error);
+    console.error('Error stack:', error instanceof Error ? error.stack : 'No stack');
     return NextResponse.json(
       { 
         error: 'Failed to generate response',
         details: error instanceof Error ? error.message : 'Unknown error',
-        message: "Sorry babe, having technical issues. Try again? 💕"
+        message: "Ugh, tech issues... try that again?"
       },
       { status: 500 }
     );
