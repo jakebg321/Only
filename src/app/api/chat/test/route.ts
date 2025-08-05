@@ -4,7 +4,7 @@ import { PersonalityTone } from '@prisma/client';
 
 export async function POST(request: Request) {
   try {
-    const { message, personality = {} } = await request.json();
+    const { message, personality = {}, conversationHistory = [] } = await request.json();
 
     if (!message) {
       return NextResponse.json(
@@ -82,10 +82,7 @@ export async function POST(request: Request) {
     console.log('Personality tone:', personality.tone);
     console.log('Full personality config:', testPersonality);
     
-    // Get conversation history from request if available
-    const conversationHistory: any[] = [];
-    
-    // Send message without subscription context - let the AI be natural
+    // Send message with conversation history for context
     const response = await grokClient.generateSecureResponse(message, testPersonality, conversationHistory);
     console.log('Grok response received:', response);
 

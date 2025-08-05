@@ -97,6 +97,7 @@ export default function Chat() {
   const [personality, setPersonality] = useState<Personality>(DEFAULT_PERSONALITY);
   const [tempPersonality, setTempPersonality] = useState<Personality>(DEFAULT_PERSONALITY);
   const [showSettings, setShowSettings] = useState(false);
+  const [customPersonalities, setCustomPersonalities] = useState<any[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -106,6 +107,58 @@ export default function Chat() {
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
+
+  // Load custom personalities when component mounts
+  useEffect(() => {
+    loadCustomPersonalities();
+    
+    // Listen for personality updates from the setup page
+    const handlePersonalityUpdate = () => {
+      loadCustomPersonalities();
+    };
+    
+    // Listen for page visibility changes to reload personalities when returning to chat
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        loadCustomPersonalities();
+      }
+    };
+    
+    // Listen for window focus to catch navigation between pages
+    const handleFocus = () => {
+      loadCustomPersonalities();
+    };
+    
+    window.addEventListener('personalityUpdated', handlePersonalityUpdate);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('focus', handleFocus);
+    
+    return () => {
+      window.removeEventListener('personalityUpdated', handlePersonalityUpdate);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('focus', handleFocus);
+    };
+  }, []);
+
+  const loadCustomPersonalities = async () => {
+    try {
+      console.log('Loading custom personalities...');
+      const response = await fetch('/api/creator/personality');
+      const data = await response.json();
+      console.log('Custom personalities API response:', data);
+      
+      if (data.personalities) {
+        console.log('Setting custom personalities:', data.personalities);
+        setCustomPersonalities(data.personalities);
+      } else {
+        console.log('No personalities found in response');
+        setCustomPersonalities([]);
+      }
+    } catch (error) {
+      console.error('Failed to load custom personalities:', error);
+      setCustomPersonalities([]);
+    }
+  };
 
   const startDemo = () => {
     setPersonality(DEFAULT_PERSONALITY);
@@ -137,15 +190,38 @@ export default function Chat() {
     }]);
   };
 
-  const applyPreset = (preset: keyof typeof PRESET_PERSONALITIES) => {
-    const newPersonality = PRESET_PERSONALITIES[preset];
+  const applyPreset = (preset: keyof typeof PRESET_PERSONALITIES | string) => {
+    let newPersonality;
+    
+    // Check if it's a preset or custom personality
+    if (preset in PRESET_PERSONALITIES) {
+      newPersonality = PRESET_PERSONALITIES[preset as keyof typeof PRESET_PERSONALITIES];
+    } else {
+      // Find custom personality by ID
+      const customPersonality = customPersonalities.find(p => p.id === preset);
+      if (customPersonality) {
+        newPersonality = customPersonality;
+      } else {
+        console.error('Personality not found:', preset);
+        return;
+      }
+    }
+    
     setPersonality(newPersonality);
     
-    // Add transition message
+    // Add transition message - acknowledge if we already know their name
+    const lastUserMessage = messages.filter(m => m.role === 'user').pop();
+    const userName = lastUserMessage?.content?.match(/jake|daddy|sir|master|babe/i)?.[0] || '';
+    
+    // Get the personality name (presets use 'name', custom use 'displayName')
+    const personalityName = newPersonality.name || newPersonality.displayName || 'your creator';
+    
     const transitionMessage: Message = {
       id: Date.now().toString(),
       role: 'assistant',
-      content: `*Switching to ${newPersonality.name}* Hey there... what's your name? 😊`,
+      content: userName 
+        ? `*Switching to ${personalityName}* Hey ${userName} 😊 I'm in a different mood now...`
+        : `*Switching to ${personalityName}* Hey you 😊 What should I call you?`,
       timestamp: new Date()
     };
     setMessages(prev => [...prev, transitionMessage]);
@@ -181,13 +257,20 @@ export default function Chat() {
     }, 800);
 
     try {
+      // Send recent conversation history to maintain context
+      const conversationHistory = messages.slice(-6).map(msg => ({
+        role: msg.role,
+        content: msg.content
+      }));
+
       const response = await fetch('/api/chat/test', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           message: input,
+          conversationHistory,
           personality: {
-            name: personality.name,
+            name: personality.name || personality.displayName,
             tone: personality.tone,
             enableEmojis: personality.enableEmojis,
             flirtLevel: personality.flirtLevel,
@@ -370,6 +453,7 @@ export default function Chat() {
                   <div>
                     <Label className="text-sm">Mood</Label>
                     <div className="grid grid-cols-2 gap-2 mt-2">
+                      {/* Preset personalities */}
                       <Button
                         onClick={() => applyPreset('flirty')}
                         variant={personality.tone === 'FLIRTY' ? 'default' : 'outline'}
@@ -406,6 +490,21 @@ export default function Chat() {
                         <Zap className="w-3 h-3 mr-1" />
                         Mystery
                       </Button>
+                      
+                      {/* Custom personalities */}
+                      {console.log('Rendering custom personalities:', customPersonalities)}
+                      {customPersonalities.map((customPersonality) => (
+                        <Button
+                          key={customPersonality.id}
+                          onClick={() => applyPreset(customPersonality.id)}
+                          variant={(personality.name || personality.displayName) === (customPersonality.name || customPersonality.displayName) ? 'default' : 'outline'}
+                          size="sm"
+                          className="text-xs"
+                        >
+                          <User className="w-3 h-3 mr-1" />
+                          {customPersonality.displayName || customPersonality.name}
+                        </Button>
+                      ))}
                     </div>
                   </div>
 
@@ -460,7 +559,7 @@ export default function Chat() {
                   {/* Current Settings */}
                   <div className="bg-purple-900/20 p-3 rounded-lg">
                     <p className="text-xs font-semibold mb-1">Current Vibe:</p>
-                    <p className="text-xs text-gray-300">{personality.name}</p>
+                    <p className="text-xs text-gray-300">{personality.name || personality.displayName}</p>
                     <p className="text-xs text-gray-300">{personality.tone === 'FLIRTY' ? '💕 Flirty' : personality.tone === 'DOMINANT' ? '⛓️ Dominant' : personality.tone === 'SUBMISSIVE' ? '🎀 Submissive' : '🌙 Mysterious'}</p>
                     <p className="text-xs text-gray-300">Level {personality.flirtLevel} • {personality.explicitLevel === 0 ? 'Teasing' : personality.explicitLevel === 1 ? 'Suggestive' : personality.explicitLevel === 2 ? 'Explicit' : 'XXX'}</p>
                   </div>
@@ -474,7 +573,7 @@ export default function Chat() {
             <div className="mb-4 flex justify-between items-center">
               <div>
                 <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
-                  Chat with {personality.name}
+                  Chat with {personality.name || personality.displayName}
                 </h1>
                 <p className="text-gray-400">
                   {showSettings && `${personality.tone} mode • Level ${personality.flirtLevel}`}
@@ -551,7 +650,7 @@ export default function Chat() {
                   <Textarea
                     value={input}
                     onChange={(e) => setInput(e.target.value)}
-                    placeholder={`Message ${personality.name}...`}
+                    placeholder={`Message ${personality.name || personality.displayName}...`}
                     className="flex-1 bg-gray-800 border-gray-600 text-white resize-none"
                     rows={2}
                     onKeyPress={(e) => {

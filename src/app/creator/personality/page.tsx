@@ -88,10 +88,18 @@ export default function PersonalitySetup() {
         body: JSON.stringify(personality)
       });
       if (response.ok) {
-        alert('Personality saved successfully!');
+        const result = await response.json();
+        alert(`Personality "${personality.displayName}" saved successfully! You can now select it in the chat mood selector.`);
+        
+        // Notify the chat page about the new personality by triggering a storage event
+        // This is a simple way to communicate between pages without complex state management
+        window.dispatchEvent(new CustomEvent('personalityUpdated', { 
+          detail: { personality: result.data } 
+        }));
       }
     } catch (error) {
       console.error('Error saving personality:', error);
+      alert('Failed to save personality. Please try again.');
     }
   };
 
