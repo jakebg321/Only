@@ -1,0 +1,226 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  CREATOR
+  MANAGER
+  SUBSCRIBER
+  ADMIN
+}
+
+enum MessageSender {
+  SUBSCRIBER
+  AI
+  CREATOR
+}
+
+enum ContentRequestStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+enum PersonalityTone {
+  FLIRTY
+  FRIENDLY
+  MYSTERIOUS
+  PROFESSIONAL
+  PLAYFUL
+  DOMINANT
+  SUBMISSIVE
+}
+
+model User {
+  id            String      @id @default(cuid())
+  email         String      @unique
+  passwordHash  String
+  role          UserRole
+  isActive      Boolean     @default(true)
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  creator       Creator?
+  subscriber    Subscriber?
+  manager       Manager?
+}
+
+model Creator {
+  id                String      @id @default(cuid())
+  userId           String      @unique
+  user             User        @relation(fields: [userId], references: [id])
+  displayName      String
+  bio              String?
+  profileImageUrl  String?
+  subscriptionPrice Decimal     @db.Decimal(10, 2)
+  aiModelTrained   Boolean     @default(false)
+  aiModelUrl       String?
+  isVerified       Boolean     @default(false)
+  createdAt        DateTime    @default(now())
+  updatedAt        DateTime    @updatedAt
+
+  personality      CreatorPersonality?
+  chatSessions     ChatSession[]
+  responseTemplates ResponseTemplate[]
+  contentRequests  ContentRequest[]
+  analytics        Analytics[]
+  subscribers      CreatorSubscriber[]
+  managedBy        ManagerCreator[]
+}
+
+model CreatorPersonality {
+  id                  String          @id @default(cuid())
+  creatorId          String          @unique
+  creator            Creator         @relation(fields: [creatorId], references: [id])
+  tone               PersonalityTone @default(FRIENDLY)
+  greetingMessage    String
+  interests          String[]
+  boundaries         String[]
+  customInstructions String?
+  responseStyle      String?
+  languagePreferences String[]        @default(["en"])
+  maxResponseLength  Int             @default(500)
+  enableEmojis       Boolean         @default(true)
+  enableMediaSuggestions Boolean      @default(true)
+  createdAt          DateTime        @default(now())
+  updatedAt          DateTime        @updatedAt
+}
+
+model Subscriber {
+  id              String      @id @default(cuid())
+  userId         String      @unique
+  user           User        @relation(fields: [userId], references: [id])
+  displayName     String?
+  totalSpent      Decimal     @default(0) @db.Decimal(10, 2)
+  joinDate        DateTime    @default(now())
+  
+  chatSessions    ChatSession[]
+  subscriptions   CreatorSubscriber[]
+}
+
+model Manager {
+  id              String      @id @default(cuid())
+  userId         String      @unique
+  user           User        @relation(fields: [userId], references: [id])
+  companyName     String?
+  commissionRate  Decimal     @default(20) @db.Decimal(5, 2)
+  
+  creators        ManagerCreator[]
+}
+
+model CreatorSubscriber {
+  id              String      @id @default(cuid())
+  creatorId      String
+  creator        Creator     @relation(fields: [creatorId], references: [id])
+  subscriberId   String
+  subscriber     Subscriber  @relation(fields: [subscriberId], references: [id])
+  subscribedAt   DateTime    @default(now())
+  expiresAt      DateTime?
+  isActive       Boolean     @default(true)
+  monthlyAmount  Decimal     @db.Decimal(10, 2)
+  
+  @@unique([creatorId, subscriberId])
+}
+
+model ManagerCreator {
+  id          String      @id @default(cuid())
+  managerId  String
+  manager    Manager     @relation(fields: [managerId], references: [id])
+  creatorId  String
+  creator    Creator     @relation(fields: [creatorId], references: [id])
+  startDate  DateTime    @default(now())
+  endDate    DateTime?
+  isActive   Boolean     @default(true)
+  
+  @@unique([managerId, creatorId])
+}
+
+model ChatSession {
+  id              String      @id @default(cuid())
+  creatorId      String
+  creator        Creator     @relation(fields: [creatorId], references: [id])
+  subscriberId   String
+  subscriber     Subscriber  @relation(fields: [subscriberId], references: [id])
+  startedAt      DateTime    @default(now())
+  lastMessageAt  DateTime    @default(now())
+  isActive       Boolean     @default(true)
+  totalMessages  Int         @default(0)
+  
+  messages        Message[]
+  contentRequests ContentRequest[]
+  
+  @@index([creatorId, subscriberId])
+}
+
+model Message {
+  id                 String         @id @default(cuid())
+  sessionId         String
+  session           ChatSession    @relation(fields: [sessionId], references: [id])
+  senderType        MessageSender
+  content           String         @db.Text
+  messageType       String         @default("text") // text, image, video, audio
+  mediaUrl          String?
+  isAiGenerated     Boolean        @default(false)
+  aiConfidenceScore Float?
+  createdAt         DateTime       @default(now())
+  readAt            DateTime?
+  
+  @@index([sessionId, createdAt])
+}
+
+model ResponseTemplate {
+  id             String      @id @default(cuid())
+  creatorId     String
+  creator       Creator     @relation(fields: [creatorId], references: [id])
+  triggerPhrase String
+  responseText  String      @db.Text
+  category      String
+  usageCount    Int         @default(0)
+  isActive      Boolean     @default(true)
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+  
+  @@index([creatorId, category])
+}
+
+model ContentRequest {
+  id           String                @id @default(cuid())
+  sessionId   String
+  session     ChatSession           @relation(fields: [sessionId], references: [id])
+  creatorId   String
+  creator     Creator              @relation(fields: [creatorId], references: [id])
+  requestType String               // photo, video, audio, custom
+  prompt      String               @db.Text
+  status      ContentRequestStatus @default(PENDING)
+  resultUrl   String?
+  errorMessage String?
+  createdAt   DateTime             @default(now())
+  completedAt DateTime?
+  
+  @@index([creatorId, status])
+}
+
+model Analytics {
+  id                String      @id @default(cuid())
+  creatorId        String
+  creator          Creator     @relation(fields: [creatorId], references: [id])
+  date             DateTime    @db.Date
+  messagesSent     Int         @default(0)
+  aiResponses      Int         @default(0)
+  revenueGenerated Decimal     @default(0) @db.Decimal(10, 2)
+  newSubscribers   Int         @default(0)
+  activeChats      Int         @default(0)
+  contentGenerated Int         @default(0)
+  
+  @@unique([creatorId, date])
+  @@index([creatorId, date])
+}

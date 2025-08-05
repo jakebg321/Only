@@ -36,10 +36,10 @@ export default function ManagerDemo() {
       <div className="container mx-auto px-4 py-8">
         <h1 className="text-4xl font-bold mb-8 gradient-text">Maximize Your Agency's Profits with AI</h1>
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-        <Card><CardHeader><CardTitle>Total Revenue</CardTitle></CardHeader><CardContent><DollarSign className="w-8 h-8 mb-2 text-green-400" /><p className="text-2xl font-bold">$450,000</p><p className="text-sm text-gray-400">+25% MoM Growth</p></CardContent></Card>
+        <Card><CardHeader><CardTitle>Total Revenue</CardTitle></CardHeader><CardContent><DollarSign className="w-8 h-8 mb-2 text-green-400" /><p className="text-2xl font-bold">$450,000</p><p className="text-sm text-gray-400">Strong Growth</p></CardContent></Card>
         <Card><CardHeader><CardTitle>Active Creators</CardTitle></CardHeader><CardContent><Users className="w-8 h-8 mb-2 text-blue-400" /><p className="text-2xl font-bold">50</p><p className="text-sm text-gray-400">+10 New Signups</p></CardContent></Card>
-        <Card><CardHeader><CardTitle>Avg. Revenue/Creator</CardTitle></CardHeader><CardContent><TrendingUp className="w-8 h-8 mb-2 text-purple-400" /><p className="text-2xl font-bold">$9,000</p><p className="text-sm text-gray-400">+15% Increase</p></CardContent></Card>
-        <Card><CardHeader><CardTitle>Conversion Rate</CardTitle></CardHeader><CardContent><BarChart2 className="w-8 h-8 mb-2 text-orange-400" /><p className="text-2xl font-bold">4.2%</p><p className="text-sm text-gray-400">Industry-Leading</p></CardContent></Card>
+        <Card><CardHeader><CardTitle>Avg. Revenue/Creator</CardTitle></CardHeader><CardContent><TrendingUp className="w-8 h-8 mb-2 text-purple-400" /><p className="text-2xl font-bold">$9,000</p><p className="text-sm text-gray-400">Strong Performance</p></CardContent></Card>
+        <Card><CardHeader><CardTitle>Conversion Rate</CardTitle></CardHeader><CardContent><BarChart2 className="w-8 h-8 mb-2 text-orange-400" /><p className="text-2xl font-bold">4.2%</p><p className="text-sm text-gray-400">Excellent</p></CardContent></Card>
       </div>
       <Card className="mb-8">
         <CardHeader><CardTitle>Explosive Revenue Growth</CardTitle></CardHeader>

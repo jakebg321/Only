@@ -13,7 +13,7 @@ export default function Home() {
         <div className="container mx-auto text-center">
           <div className="mb-8">
             <h1 className="text-6xl md:text-7xl font-bold mb-6 bg-gradient-to-r from-purple-400 via-pink-500 to-red-500 bg-clip-text text-transparent">
-              AI Twins Platform
+              Only Twins Platform
             </h1>
             <p className="text-2xl md:text-3xl font-semibold text-gray-300 mb-4">
               The Future of Content Creation is Here
@@ -48,7 +48,7 @@ export default function Home() {
               <div className="text-gray-400">AI Messages Sent</div>
             </div>
             <div className="text-center">
-              <div className="text-4xl font-bold text-pink-400 mb-2">98%</div>
+              <div className="text-4xl font-bold text-pink-400 mb-2">High</div>
               <div className="text-gray-400">Creator Satisfaction</div>
             </div>
           </div>
@@ -59,7 +59,7 @@ export default function Home() {
       <section className="py-20 px-4">
         <div className="container mx-auto">
           <h2 className="text-5xl font-bold mb-4 text-center bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
-            Why Top Creators Choose AI Twins
+            Why Top Creators Choose Only Twins
           </h2>
           <p className="text-xl text-gray-400 text-center mb-16 max-w-3xl mx-auto">
             Join the revolution. Stop trading time for money. Start scaling with AI.
@@ -76,7 +76,7 @@ export default function Home() {
               <CardContent>
                 <p className="text-gray-300 text-lg leading-relaxed">
                   Your AI twin works 24/7, engaging subscribers with personalized content. 
-                  Top creators report 300-1000% revenue increases within 30 days.
+                  Top creators report significant revenue increases within 30 days.
                 </p>
               </CardContent>
             </Card>
@@ -90,7 +90,7 @@ export default function Home() {
               </CardHeader>
               <CardContent>
                 <p className="text-gray-300 text-lg leading-relaxed">
-                  Stop being glued to your phone. Your AI handles 95% of subscriber interactions 
+                  Stop being glued to your phone. Your AI handles most subscriber interactions 
                   while maintaining your authentic voice and personality.
                 </p>
               </CardContent>
@@ -120,8 +120,8 @@ export default function Home() {
                 <Star key={star} className="w-8 h-8 text-yellow-400 fill-current" />
               ))}
             </div>
-            <p className="text-xl text-gray-300 mb-4">"Increased my monthly revenue from $15K to $75K in just 6 weeks"</p>
-            <p className="text-purple-400 font-semibold">- Sarah M., Top 0.1% Creator</p>
+            <p className="text-xl text-gray-300 mb-4">"Increased my monthly revenue significantly in just 6 weeks"</p>
+            <p className="text-purple-400 font-semibold">- Sarah M., Top Creator</p>
           </div>
 
           {/* CTA Section */}
@@ -143,7 +143,7 @@ export default function Home() {
       {/* Footer */}
       <footer className="py-12 px-4 border-t border-gray-800">
         <div className="container mx-auto text-center">
-          <p className="text-gray-400">&copy; 2024 AI Twins Platform. All rights reserved.</p>
+          <p className="text-gray-400">&copy; 2024 Only Twins Platform. All rights reserved.</p>
         </div>
       </footer>
     </div>
