@@ -73,7 +73,7 @@ export default function AdminDashboard() {
                 </div>
                 <div>
                   <Label htmlFor="image-upload">Upload Image (optional)</Label>
-                  <Input id="image-upload" type="file" onChange={(e) => setImageFile(e.target.files[0])} />
+                  <Input id="image-upload" type="file" onChange={(e) => setImageFile(e.target.files?.[0] || null)} />
                 </div>
                 <Button onClick={handleSubmitResponse}>Submit Response</Button>
               </div>
