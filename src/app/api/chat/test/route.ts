@@ -83,7 +83,7 @@ export async function POST(request: Request) {
     console.log('Full personality config:', testPersonality);
     
     // Get conversation history from request if available
-    const conversationHistory = [];
+    const conversationHistory: any[] = [];
     
     // Send message without subscription context - let the AI be natural
     const response = await grokClient.generateSecureResponse(message, testPersonality, conversationHistory);
