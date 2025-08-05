@@ -15,11 +15,11 @@ const initialRequests = [
 
 export default function AdminDashboard() {
   const [requests, setRequests] = useState(initialRequests);
-  const [selectedRequest, setSelectedRequest] = useState(null);
+  const [selectedRequest, setSelectedRequest] = useState<number | null>(null);
   const [responseText, setResponseText] = useState("");
-  const [imageFile, setImageFile] = useState(null);
+  const [imageFile, setImageFile] = useState<File | null>(null);
 
-  const handleStatusChange = (id, newStatus) => {
+  const handleStatusChange = (id: number, newStatus: string) => {
     setRequests(requests.map(req => req.id === id ? { ...req, status: newStatus } : req));
   };
 

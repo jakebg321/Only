@@ -9,10 +9,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { 
   Save, 
   Sparkles, 
-  Heart, 
   MessageCircle, 
   Shield, 
-  DollarSign,
   User,
   Zap
 } from 'lucide-react';
