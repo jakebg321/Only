@@ -34,7 +34,7 @@ export default function ManagerDemo() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 pt-20">
       <div className="container mx-auto px-4 py-8">
-        <h1 className="text-4xl font-bold mb-8 gradient-text">Maximize Your Agency's Profits with AI</h1>
+        <h1 className="text-4xl font-bold mb-8 gradient-text">Maximize Your Agency&apos;s Profits with AI</h1>
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
         <Card><CardHeader><CardTitle>Total Revenue</CardTitle></CardHeader><CardContent><DollarSign className="w-8 h-8 mb-2 text-green-400" /><p className="text-2xl font-bold">$450,000</p><p className="text-sm text-gray-400">Strong Growth</p></CardContent></Card>
         <Card><CardHeader><CardTitle>Active Creators</CardTitle></CardHeader><CardContent><Users className="w-8 h-8 mb-2 text-blue-400" /><p className="text-2xl font-bold">50</p><p className="text-sm text-gray-400">+10 New Signups</p></CardContent></Card>

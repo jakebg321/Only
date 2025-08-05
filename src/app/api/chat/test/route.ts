@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
 import { GrokClient } from '@/lib/grok-client';
-import GrokRateLimiter from '@/lib/grok-rate-limiter';
 
 export async function POST(request: Request) {
   try {

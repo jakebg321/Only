@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: only-twins
+    runtime: node
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: GROK_API_KEY
+        sync: false
+      - key: DATABASE_URL
+        value: postgresql://assistant_03pp_user:pmXrF2NRMiRv69T1CgOfAdS6ALV0MHrS@dpg-d170c87diees73dlsueg-a.ohio-postgres.render.com/assistant_03pp

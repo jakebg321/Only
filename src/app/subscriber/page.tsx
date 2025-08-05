@@ -1,10 +1,8 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
-import { Send, Image as ImageIcon, Video } from "lucide-react";
 import { useRouter } from "next/navigation";
 import ImageCarousel from "@/components/ImageCarousel";
 

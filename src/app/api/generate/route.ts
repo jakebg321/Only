@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-let requestQueue: any[] = [];
+const requestQueue: { id: number; userId: string; prompt: string; status: string }[] = [];
 
 export async function POST(request: Request) {
   const { prompt, userId } = await request.json();

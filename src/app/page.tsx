@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Zap, Users, DollarSign, BarChart, Star, TrendingUp, Shield } from "lucide-react";
+import { Zap, DollarSign, Star, TrendingUp } from "lucide-react";
 
 export default function Home() {
   return (
@@ -120,7 +120,7 @@ export default function Home() {
                 <Star key={star} className="w-8 h-8 text-yellow-400 fill-current" />
               ))}
             </div>
-            <p className="text-xl text-gray-300 mb-4">"Increased my monthly revenue significantly in just 6 weeks"</p>
+            <p className="text-xl text-gray-300 mb-4">&quot;Increased my monthly revenue significantly in just 6 weeks&quot;</p>
             <p className="text-purple-400 font-semibold">- Sarah M., Top Creator</p>
           </div>
 
