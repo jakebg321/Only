@@ -49,10 +49,11 @@ async function sendLocalNotification(requestData: any) {
       console.log('❌ Local notification failed:', response.status);
       return { success: false, message: 'Local server not responding', mode: 'webhook' };
     }
-  } catch (error) {
+  } catch (error: unknown) {
     console.log('❌ Local notification error:', error);
     // Local server is probably not running - this is expected sometimes
-    return { success: false, message: 'Local server offline', error: error.message, mode: 'webhook' };
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    return { success: false, message: 'Local server offline', error: errorMessage, mode: 'webhook' };
   }
 }
 
