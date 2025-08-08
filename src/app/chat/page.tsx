@@ -160,6 +160,60 @@ export default function Chat() {
     }
   };
 
+  const requestCustomImage = async (type = 'image') => {
+    const userName = 'Jake'; // Get from user context later
+    const userId = 'user_jake'; // Get from user context later
+    
+    let prompt = '';
+    if (type === 'image') {
+      prompt = window.prompt('What kind of custom photo would you like? Describe it:') || '';
+    } else if (type === 'video') {
+      prompt = window.prompt('What kind of custom video would you like? Describe it:') || '';
+    }
+    
+    if (!prompt.trim()) return;
+    
+    try {
+      const response = await fetch('/api/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          prompt,
+          userId,
+          userName,
+          requestType: type === 'video' ? 'custom_video' : 'custom_image',
+          urgency: 'normal'
+        })
+      });
+      
+      const data = await response.json();
+      
+      if (response.ok) {
+        // Add message to chat showing the request was submitted
+        const requestMessage: Message = {
+          id: Date.now().toString(),
+          role: 'assistant',
+          content: `Got your request! 📋 I'll work on your custom ${type} and send it to you soon. Request #${data.requestId}${data.localNotification?.success ? ' (Creator notified!)' : ' (Will notify creator when available)'}`,
+          timestamp: new Date()
+        };
+        setMessages(prev => [...prev, requestMessage]);
+        
+        console.log('Custom content request submitted:', data);
+      } else {
+        throw new Error(data.error || 'Failed to submit request');
+      }
+    } catch (error) {
+      console.error('Request submission error:', error);
+      const errorMessage: Message = {
+        id: Date.now().toString(),
+        role: 'assistant',
+        content: `Sorry, there was an issue submitting your request. Try again?`,
+        timestamp: new Date()
+      };
+      setMessages(prev => [...prev, errorMessage]);
+    }
+  };
+
   const startDemo = () => {
     setPersonality(DEFAULT_PERSONALITY);
     setMode('chat');
@@ -646,6 +700,26 @@ export default function Chat() {
               </CardContent>
 
               <div className="p-4 border-t border-gray-700">
+                {/* Quick Action Buttons */}
+                <div className="flex gap-2 mb-3 flex-wrap">
+                  <Button
+                    onClick={() => requestCustomImage()}
+                    size="sm"
+                    variant="outline"
+                    className="text-xs border-purple-500 text-purple-400 hover:bg-purple-500 hover:text-white"
+                  >
+                    📸 Request Custom Pic
+                  </Button>
+                  <Button
+                    onClick={() => requestCustomImage('video')}
+                    size="sm"
+                    variant="outline"
+                    className="text-xs border-pink-500 text-pink-400 hover:bg-pink-500 hover:text-white"
+                  >
+                    🎥 Request Video
+                  </Button>
+                </div>
+                
                 <div className="flex gap-2">
                   <Textarea
                     value={input}

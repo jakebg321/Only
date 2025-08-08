@@ -1,55 +1,31 @@
 "use client";
 
-import React, { useCallback } from 'react';
+import React, { useCallback, useState } from 'react';
 import useEmblaCarousel from 'embla-carousel-react';
 import { ChevronLeft, ChevronRight, Heart, Eye } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 
-const images = [
-  {
-    src: '/image (33).png',
-    title: 'AI Generated Content 1',
-    likes: 1247,
-    views: 8932
-  },
-  {
-    src: '/image (34).png',
-    title: 'AI Generated Content 2',
-    likes: 2156,
-    views: 12458
-  },
-  {
-    src: '/image (35).png',
-    title: 'AI Generated Content 3',
-    likes: 1876,
-    views: 9876
-  },
-  {
-    src: '/image (36).png',
-    title: 'AI Generated Content 4',
-    likes: 3124,
-    views: 15632
-  },
-  {
-    src: '/image (37).png',
-    title: 'AI Generated Content 5',
-    likes: 2789,
-    views: 13247
-  },
-  {
-    src: '/image (38).png',
-    title: 'AI Generated Content 6',
-    likes: 1956,
-    views: 11234
-  }
-];
+export type CarouselImage = {
+  src: string;
+  title?: string;
+  likes?: number;
+  views?: number;
+};
 
-export default function ImageCarousel() {
-  const [emblaRef, emblaApi] = useEmblaCarousel({ 
+type ImageCarouselProps = {
+  images: CarouselImage[];
+};
+
+export default function ImageCarousel({ images }: ImageCarouselProps) {
+  const [emblaRef, emblaApi] = useEmblaCarousel({
     loop: true,
     align: 'center',
     containScroll: 'trimSnaps'
   });
+
+  const [isLightboxOpen, setIsLightboxOpen] = useState<boolean>(false);
+  const [lightboxIndex, setLightboxIndex] = useState<number>(0);
 
   const scrollPrev = useCallback(() => {
     if (emblaApi) emblaApi.scrollPrev();
@@ -58,6 +34,14 @@ export default function ImageCarousel() {
   const scrollNext = useCallback(() => {
     if (emblaApi) emblaApi.scrollNext();
   }, [emblaApi]);
+
+  if (!images || images.length === 0) {
+    return (
+      <div className="w-full text-center text-gray-400 py-10">
+        No images available.
+      </div>
+    );
+  }
 
   return (
     <div className="relative w-full max-w-6xl mx-auto">
@@ -68,35 +52,44 @@ export default function ImageCarousel() {
               key={index}
               className="flex-none w-full md:w-1/2 lg:w-1/3 px-4"
             >
-              <div className="relative group cursor-pointer">
+              <div
+                className="relative group cursor-pointer"
+                onClick={() => { setLightboxIndex(index); setIsLightboxOpen(true); }}
+              >
                 <div className="relative overflow-hidden rounded-xl bg-black/20 backdrop-blur-sm border border-purple-500/20">
                   <img
                     src={image.src}
-                    alt={image.title}
+                    alt={image.title || `Image ${index + 1}`}
                     className="w-full h-80 object-cover transition-transform duration-500 group-hover:scale-105"
                   />
-                  
-                  {/* Overlay on hover */}
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+
+                  <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                     <div className="absolute bottom-0 left-0 right-0 p-6">
-                      <h3 className="text-white font-semibold text-lg mb-2">{image.title}</h3>
-                      <div className="flex items-center justify-between text-white/80">
-                        <div className="flex items-center gap-4">
-                          <div className="flex items-center gap-1">
-                            <Heart className="w-4 h-4" />
-                            <span className="text-sm">{image.likes.toLocaleString()}</span>
-                          </div>
-                          <div className="flex items-center gap-1">
-                            <Eye className="w-4 h-4" />
-                            <span className="text-sm">{image.views.toLocaleString()}</span>
+                      {image.title && (
+                        <h3 className="text-white font-semibold text-lg mb-2">{image.title}</h3>
+                      )}
+                      {(image.likes !== undefined || image.views !== undefined) && (
+                        <div className="flex items-center justify-between text-white/80">
+                          <div className="flex items-center gap-4">
+                            {image.likes !== undefined && (
+                              <div className="flex items-center gap-1">
+                                <Heart className="w-4 h-4" />
+                                <span className="text-sm">{image.likes.toLocaleString()}</span>
+                              </div>
+                            )}
+                            {image.views !== undefined && (
+                              <div className="flex items-center gap-1">
+                                <Eye className="w-4 h-4" />
+                                <span className="text-sm">{image.views.toLocaleString()}</span>
+                              </div>
+                            )}
                           </div>
                         </div>
-                      </div>
+                      )}
                     </div>
                   </div>
 
-                  {/* Premium badge */}
-                  <div className="absolute top-4 right-4 bg-gradient-to-r from-purple-600 to-pink-600 text-white text-xs font-bold px-3 py-1 rounded-full">
+                  <div className="pointer-events-none absolute top-4 right-4 bg-gradient-to-r from-purple-600 to-pink-600 text-white text-xs font-bold px-3 py-1 rounded-full">
                     AI Premium
                   </div>
                 </div>
@@ -106,7 +99,6 @@ export default function ImageCarousel() {
         </div>
       </div>
 
-      {/* Navigation buttons */}
       <Button
         onClick={scrollPrev}
         variant="outline"
@@ -115,7 +107,7 @@ export default function ImageCarousel() {
       >
         <ChevronLeft className="w-5 h-5" />
       </Button>
-      
+
       <Button
         onClick={scrollNext}
         variant="outline"
@@ -124,6 +116,23 @@ export default function ImageCarousel() {
       >
         <ChevronRight className="w-5 h-5" />
       </Button>
+
+      <Dialog open={isLightboxOpen} onOpenChange={setIsLightboxOpen}>
+        <DialogContent
+          className="max-w-none w-[96vw] h-[92vh] p-0 bg-black/80 border-none shadow-none"
+        >
+          <DialogTitle className="sr-only">Image viewer</DialogTitle>
+          {images[lightboxIndex] && (
+            <div className="w-full h-full flex items-center justify-center">
+              <img
+                src={images[lightboxIndex].src}
+                alt={images[lightboxIndex].title || `Image ${lightboxIndex + 1}`}
+                className="max-w-full max-h-full object-contain"
+              />
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

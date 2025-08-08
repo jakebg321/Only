@@ -28,6 +28,11 @@ export default function Header() {
             Creator
           </Button>
         </Link>
+        <Link href="/gallery">
+          <Button variant="ghost" className="hover:bg-purple-900/50 transition-colors">
+            Gallery
+          </Button>
+        </Link>
         <Link href="/creator/personality">
           <Button variant="ghost" className="hover:bg-purple-900/50 transition-colors">
             AI Setup

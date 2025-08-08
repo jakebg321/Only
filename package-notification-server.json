@@ -1,0 +1,24 @@
+{
+  "name": "local-notification-server",
+  "version": "1.0.0",
+  "description": "Local notification server for OnlyFans image generation requests",
+  "main": "local-notification-server.js",
+  "scripts": {
+    "start": "node local-notification-server.js",
+    "dev": "nodemon local-notification-server.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1"
+  },
+  "keywords": [
+    "notification",
+    "webhook",
+    "local-server",
+    "image-generation"
+  ],
+  "author": "Jake",
+  "license": "MIT"
+}

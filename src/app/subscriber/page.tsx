@@ -1,13 +1,15 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { useRouter } from "next/navigation";
-import ImageCarousel from "@/components/ImageCarousel";
+import ImageCarousel, { CarouselImage } from "@/components/ImageCarousel";
 
 export default function SubscriberDemo() {
   const router = useRouter();
+  const [images, setImages] = useState<CarouselImage[]>([]);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
 
   useEffect(() => {
     const userType = localStorage.getItem("userType");
@@ -15,6 +17,23 @@ export default function SubscriberDemo() {
       router.push("/auth");
     }
   }, [router]);
+
+  useEffect(() => {
+    async function fetchImages() {
+      try {
+        setIsLoading(true);
+        const res = await fetch("/api/images/remy");
+        if (!res.ok) throw new Error("Failed to load images");
+        const data: { images: string[] } = await res.json();
+        setImages(data.images.map((src) => ({ src })));
+      } catch (e) {
+        console.error(e);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+    fetchImages();
+  }, []);
 
       return (
       <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 pt-20">
@@ -25,7 +44,11 @@ export default function SubscriberDemo() {
             <CardContent className="p-8">
               <h2 className="text-2xl font-bold mb-4 text-center text-white">Premium AI Content Gallery</h2>
               <p className="text-gray-300 text-center mb-6">See what our AI can create just for you</p>
-              <ImageCarousel />
+              {isLoading ? (
+                <div className="text-gray-400 text-center py-8">Loading images...</div>
+              ) : (
+                <ImageCarousel images={images} />
+              )}
             </CardContent>
           </Card>
 

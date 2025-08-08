@@ -3,9 +3,9 @@
 import { LineChart, Line, XAxis, YAxis, Tooltip, Legend } from "recharts";
 import { DollarSign, Users, Clock, FileText } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import ImageCarousel from "@/components/ImageCarousel";
+import ImageCarousel, { CarouselImage } from "@/components/ImageCarousel";
 
 const timeSavedData = [
   { activity: "Content Creation", timeSaved: 20 },
@@ -24,6 +24,8 @@ const subData = [
 
 export default function CreatorDemo() {
   const router = useRouter();
+  const [remyImages, setRemyImages] = useState<CarouselImage[]>([]);
+  const [isLoadingImages, setIsLoadingImages] = useState<boolean>(false);
 
   useEffect(() => {
     const userType = localStorage.getItem("userType");
@@ -31,6 +33,24 @@ export default function CreatorDemo() {
       router.push("/auth");
     }
   }, [router]);
+
+  useEffect(() => {
+    async function fetchImages() {
+      try {
+        setIsLoadingImages(true);
+        const res = await fetch("/api/images/remy");
+        if (!res.ok) throw new Error("Failed to load images");
+        const data: { images: string[] } = await res.json();
+        const mapped: CarouselImage[] = data.images.map((src) => ({ src }));
+        setRemyImages(mapped);
+      } catch (e) {
+        console.error(e);
+      } finally {
+        setIsLoadingImages(false);
+      }
+    }
+    fetchImages();
+  }, []);
 
       return (
       <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 pt-20">
@@ -68,7 +88,11 @@ export default function CreatorDemo() {
       <Card className="bg-black/40 border-purple-500/20 backdrop-blur-sm">
         <CardHeader><CardTitle className="text-2xl">Your AI Generated Content Gallery</CardTitle></CardHeader>
         <CardContent>
-          <ImageCarousel />
+          {isLoadingImages ? (
+            <div className="text-gray-400">Loading images...</div>
+          ) : (
+            <ImageCarousel images={remyImages} />
+          )}
         </CardContent>
       </Card>
         </div>
