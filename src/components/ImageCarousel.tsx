@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import useEmblaCarousel from 'embla-carousel-react';
 import { ChevronLeft, ChevronRight, Heart, Eye } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -26,6 +26,7 @@ export default function ImageCarousel({ images }: ImageCarouselProps) {
 
   const [isLightboxOpen, setIsLightboxOpen] = useState<boolean>(false);
   const [lightboxIndex, setLightboxIndex] = useState<number>(0);
+  const [lightboxRef, lightboxApi] = useEmblaCarousel({ loop: true, align: 'center' });
 
   const scrollPrev = useCallback(() => {
     if (emblaApi) emblaApi.scrollPrev();
@@ -34,6 +35,32 @@ export default function ImageCarousel({ images }: ImageCarouselProps) {
   const scrollNext = useCallback(() => {
     if (emblaApi) emblaApi.scrollNext();
   }, [emblaApi]);
+
+  const lightboxPrev = useCallback(() => {
+    if (lightboxApi) lightboxApi.scrollPrev();
+  }, [lightboxApi]);
+
+  const lightboxNext = useCallback(() => {
+    if (lightboxApi) lightboxApi.scrollNext();
+  }, [lightboxApi]);
+
+  useEffect(() => {
+    if (!lightboxApi) return;
+    const onSelect = () => {
+      const selected = lightboxApi.selectedScrollSnap();
+      setLightboxIndex(selected);
+    };
+    lightboxApi.on('select', onSelect);
+    return () => {
+      lightboxApi.off('select', onSelect as any);
+    };
+  }, [lightboxApi]);
+
+  useEffect(() => {
+    if (isLightboxOpen && lightboxApi) {
+      lightboxApi.scrollTo(lightboxIndex, true);
+    }
+  }, [isLightboxOpen, lightboxApi, lightboxIndex]);
 
   if (!images || images.length === 0) {
     return (
@@ -89,9 +116,7 @@ export default function ImageCarousel({ images }: ImageCarouselProps) {
                     </div>
                   </div>
 
-                  <div className="pointer-events-none absolute top-4 right-4 bg-gradient-to-r from-purple-600 to-pink-600 text-white text-xs font-bold px-3 py-1 rounded-full">
-                    AI Premium
-                  </div>
+                  {/* Removed badge */}
                 </div>
               </div>
             </div>
@@ -118,19 +143,40 @@ export default function ImageCarousel({ images }: ImageCarouselProps) {
       </Button>
 
       <Dialog open={isLightboxOpen} onOpenChange={setIsLightboxOpen}>
-        <DialogContent
-          className="max-w-none w-[96vw] h-[92vh] p-0 bg-black/80 border-none shadow-none"
-        >
+        <DialogContent className="max-w-none w-[96vw] h-[92vh] p-0 bg-black/90 border-none shadow-none">
           <DialogTitle className="sr-only">Image viewer</DialogTitle>
-          {images[lightboxIndex] && (
-            <div className="w-full h-full flex items-center justify-center">
-              <img
-                src={images[lightboxIndex].src}
-                alt={images[lightboxIndex].title || `Image ${lightboxIndex + 1}`}
-                className="max-w-full max-h-full object-contain"
-              />
+          <div className="relative w-full h-full">
+            <div className="overflow-hidden w-full h-full" ref={lightboxRef}>
+              <div className="flex h-full">
+                {images.map((img, i) => (
+                  <div key={i} className="flex-none w-full h-full flex items-center justify-center px-2">
+                    <img
+                      src={img.src}
+                      alt={img.title || `Image ${i + 1}`}
+                      className="max-w-full max-h-full object-contain"
+                    />
+                  </div>
+                ))}
+              </div>
             </div>
-          )}
+
+            <Button
+              onClick={lightboxPrev}
+              variant="outline"
+              size="icon"
+              className="absolute left-4 top-1/2 -translate-y-1/2 z-10 bg-black/60 border-purple-500/50 text-white hover:bg-purple-600 hover:border-purple-600"
+            >
+              <ChevronLeft className="w-5 h-5" />
+            </Button>
+            <Button
+              onClick={lightboxNext}
+              variant="outline"
+              size="icon"
+              className="absolute right-4 top-1/2 -translate-y-1/2 z-10 bg-black/60 border-purple-500/50 text-white hover:bg-purple-600 hover:border-purple-600"
+            >
+              <ChevronRight className="w-5 h-5" />
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
     </div>
