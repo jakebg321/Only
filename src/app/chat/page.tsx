@@ -557,7 +557,6 @@ export default function Chat() {
                       </Button>
                       
                       {/* Custom personalities */}
-                      {console.log('Rendering custom personalities:', customPersonalities)}
                       {customPersonalities.map((customPersonality) => (
                         <Button
                           key={customPersonality.id}
