@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 
 // In-memory storage for now (replace with database later)
-let savedPersonalities: any[] = [];
+const savedPersonalities: any[] = [];
 
 export async function POST(request: Request) {
   try {

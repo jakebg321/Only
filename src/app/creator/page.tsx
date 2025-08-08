@@ -3,7 +3,7 @@
 import { LineChart, Line, XAxis, YAxis, Tooltip, Legend } from "recharts";
 import { DollarSign, Users, Clock, FileText } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import ImageCarousel, { CarouselImage } from "@/components/ImageCarousel";
 

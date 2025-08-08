@@ -12,7 +12,7 @@ export async function GET() {
       .filter((src) => /(\.png|\.jpg|\.jpeg|\.gif|\.webp)$/i.test(src));
 
     return NextResponse.json({ images });
-  } catch (error) {
+  } catch (_error) {
     return NextResponse.json({ images: [] }, { status: 200 });
   }
 }
