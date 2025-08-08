@@ -245,7 +245,7 @@ export default function Chat() {
   };
 
   const applyPreset = (preset: keyof typeof PRESET_PERSONALITIES | string) => {
-    let newPersonality;
+    let newPersonality: any;
     
     // Check if it's a preset or custom personality
     if (preset in PRESET_PERSONALITIES) {
@@ -261,7 +261,18 @@ export default function Chat() {
       }
     }
     
-    setPersonality(newPersonality);
+    // Normalize into our strict Personality shape
+    setPersonality({
+      name: newPersonality.displayName || newPersonality.name,
+      tone: newPersonality.tone,
+      flirtLevel: newPersonality.flirtLevel,
+      explicitLevel: newPersonality.explicitLevel,
+      interests: newPersonality.interests || [],
+      responseLength: newPersonality.responseLength || 'medium',
+      enableEmojis: newPersonality.enableEmojis ?? true,
+      emojiFrequency: newPersonality.emojiFrequency || 'moderate',
+      fantasyFocus: newPersonality.fantasyFocus || []
+    });
     
     // Add transition message - acknowledge if we already know their name
     const lastUserMessage = messages.filter(m => m.role === 'user').pop();
@@ -324,7 +335,7 @@ export default function Chat() {
           message: input,
           conversationHistory,
           personality: {
-            name: personality.name || personality.displayName,
+            name: personality.name,
             tone: personality.tone,
             enableEmojis: personality.enableEmojis,
             flirtLevel: personality.flirtLevel,
@@ -551,7 +562,7 @@ export default function Chat() {
                         <Button
                           key={customPersonality.id}
                           onClick={() => applyPreset(customPersonality.id)}
-                          variant={(personality.name || personality.displayName) === (customPersonality.name || customPersonality.displayName) ? 'default' : 'outline'}
+                          variant={personality.name === (customPersonality.displayName || customPersonality.name) ? 'default' : 'outline'}
                           size="sm"
                           className="text-xs"
                         >
@@ -613,7 +624,7 @@ export default function Chat() {
                   {/* Current Settings */}
                   <div className="bg-purple-900/20 p-3 rounded-lg">
                     <p className="text-xs font-semibold mb-1">Current Vibe:</p>
-                    <p className="text-xs text-gray-300">{personality.name || personality.displayName}</p>
+                    <p className="text-xs text-gray-300">{personality.name}</p>
                     <p className="text-xs text-gray-300">{personality.tone === 'FLIRTY' ? '💕 Flirty' : personality.tone === 'DOMINANT' ? '⛓️ Dominant' : personality.tone === 'SUBMISSIVE' ? '🎀 Submissive' : '🌙 Mysterious'}</p>
                     <p className="text-xs text-gray-300">Level {personality.flirtLevel} • {personality.explicitLevel === 0 ? 'Teasing' : personality.explicitLevel === 1 ? 'Suggestive' : personality.explicitLevel === 2 ? 'Explicit' : 'XXX'}</p>
                   </div>
@@ -627,7 +638,7 @@ export default function Chat() {
             <div className="mb-4 flex justify-between items-center">
               <div>
                 <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
-                  Chat with {personality.name || personality.displayName}
+                  Chat with {personality.name}
                 </h1>
                 <p className="text-gray-400">
                   {showSettings && `${personality.tone} mode • Level ${personality.flirtLevel}`}
@@ -724,7 +735,7 @@ export default function Chat() {
                   <Textarea
                     value={input}
                     onChange={(e) => setInput(e.target.value)}
-                    placeholder={`Message ${personality.name || personality.displayName}...`}
+                    placeholder={`Message ${personality.name}...`}
                     className="flex-1 bg-gray-800 border-gray-600 text-white resize-none"
                     rows={2}
                     onKeyPress={(e) => {
