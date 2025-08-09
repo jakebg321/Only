@@ -4,10 +4,10 @@ const LOCAL_API_URL = "https://21068d262bdf.ngrok-free.app";
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const requestId = params.id;
+    const { id: requestId } = await params;
 
     console.log(`Checking status for request: ${requestId}`);
 

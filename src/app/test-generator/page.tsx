@@ -38,8 +38,8 @@ export default function TestGenerator() {
       } else {
         setError(data.error || "Generation failed");
       }
-    } catch (err) {
-      console.error("Generation error:", err);
+    } catch (error) {
+      console.error("Generation error:", error);
       setError("Failed to connect to generation service");
     } finally {
       setIsLoading(false);
@@ -72,7 +72,8 @@ export default function TestGenerator() {
         } else {
           setError(data.error || "Generation failed");
         }
-      } catch (err) {
+      } catch (error) {
+        console.error("Status check error:", error);
         setError("Failed to check generation status");
       }
     };
