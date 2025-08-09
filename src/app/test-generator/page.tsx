@@ -148,13 +148,18 @@ export default function TestGenerator() {
                 {result.image_url && (
                   <div className="mb-4">
                     <img 
-                      src={`https://21068d262bdf.ngrok-free.app${result.image_url}`}
+                      src={
+                        // If we have a proxy endpoint, use it (works on deployed server)
+                        result.image_url.startsWith('/generated_images/') 
+                          ? `/api${result.image_url}` 
+                          : result.image_url
+                      }
                       alt="Generated image"
                       className="max-w-full h-auto rounded-lg border border-gray-600"
                       onError={(e) => {
                         console.error("Image failed to load:", e);
                         e.currentTarget.src = "";
-                        e.currentTarget.alt = "Image failed to load";
+                        e.currentTarget.alt = "Image failed to load - ensure local API is running";
                       }}
                     />
                   </div>

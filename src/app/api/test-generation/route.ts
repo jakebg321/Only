@@ -1,9 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 
-// Your ngrok URL - exposed to the internet
-const LOCAL_API_URL = "https://21068d262bdf.ngrok-free.app";
-
 export async function POST(request: NextRequest) {
+  // Get the local API URL from environment variable or fallback to localhost
+  const LOCAL_API_URL = process.env.LOCAL_API_URL || 'http://localhost:8000';
   try {
     const { prompt } = await request.json();
 
