@@ -20,6 +20,7 @@ export async function POST(request: NextRequest) {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        'ngrok-skip-browser-warning': 'true',  // Skip ngrok warning page
       },
       body: JSON.stringify({
         prompt,

@@ -12,7 +12,11 @@ export async function GET(
     const localApiUrl = process.env.LOCAL_API_URL || 'http://localhost:8000';
     
     // Fetch image from local API
-    const response = await fetch(`${localApiUrl}/generated_images/${filename}`);
+    const response = await fetch(`${localApiUrl}/generated_images/${filename}`, {
+      headers: {
+        'ngrok-skip-browser-warning': 'true',  // Skip ngrok warning page
+      }
+    });
     
     if (!response.ok) {
       return new NextResponse('Image not found', { status: 404 });

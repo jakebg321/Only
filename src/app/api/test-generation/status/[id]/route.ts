@@ -15,6 +15,9 @@ export async function GET(
     // Forward status request to local API
     const response = await fetch(`${LOCAL_API_URL}/status/${requestId}`, {
       method: 'GET',
+      headers: {
+        'ngrok-skip-browser-warning': 'true',  // Skip ngrok warning page
+      },
       signal: AbortSignal.timeout(5000) // 5 second timeout
     });
 
