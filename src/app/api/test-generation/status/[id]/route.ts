@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 
-const LOCAL_API_URL = "https://21068d262bdf.ngrok-free.app";
-
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  // Get the local API URL from environment variable or fallback to localhost
+  const LOCAL_API_URL = process.env.LOCAL_API_URL || 'http://localhost:8000';
+  
   try {
     const { id: requestId } = await params;
 
