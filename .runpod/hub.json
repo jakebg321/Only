@@ -1,0 +1,80 @@
+{
+  "title": "Fooocus Multi-LoRA Worker",
+  "description": "AI image generation worker with Fooocus, multiple LoRAs, and Next.js queue integration",
+  "type": "serverless",
+  "category": "image",
+  "iconUrl": "https://raw.githubusercontent.com/lllyasviel/Fooocus/main/logo.png",
+  "config": {
+    "runsOn": "GPU",
+    "containerDiskInGb": 50,
+    "volumeInGb": 100,
+    "presets": [
+      {
+        "name": "Production",
+        "defaults": {
+          "NEXTJS_API_URL": "https://your-app.vercel.app",
+          "POLL_INTERVAL": "5",
+          "WORKER_ID": "runpod-001"
+        }
+      },
+      {
+        "name": "Development",
+        "defaults": {
+          "NEXTJS_API_URL": "http://localhost:3000",
+          "POLL_INTERVAL": "2",
+          "WORKER_ID": "dev-001"
+        }
+      }
+    ],
+    "env": [
+      {
+        "key": "NEXTJS_API_URL",
+        "input": {
+          "name": "Next.js API URL",
+          "type": "string",
+          "description": "Your Next.js app URL (e.g., https://your-app.vercel.app)",
+          "default": "https://your-app.vercel.app",
+          "required": true
+        }
+      },
+      {
+        "key": "API_KEY",
+        "input": {
+          "name": "API Key",
+          "type": "string",
+          "description": "Optional authentication key for your API",
+          "default": "",
+          "required": false
+        }
+      },
+      {
+        "key": "WORKER_ID",
+        "input": {
+          "name": "Worker ID",
+          "type": "string",
+          "description": "Unique identifier for this worker",
+          "default": "runpod-001",
+          "required": true
+        }
+      },
+      {
+        "key": "POLL_INTERVAL",
+        "input": {
+          "name": "Poll Interval",
+          "type": "number",
+          "description": "How often to check for new requests (seconds)",
+          "default": "5",
+          "required": true
+        }
+      },
+      {
+        "key": "MODELS_PATH",
+        "value": "/workspace/models"
+      },
+      {
+        "key": "FOOOCUS_PATH",
+        "value": "/workspace/Fooocus"
+      }
+    ]
+  }
+}

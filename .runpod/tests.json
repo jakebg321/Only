@@ -1,0 +1,58 @@
+{
+  "tests": [
+    {
+      "name": "test_remy_generation",
+      "input": {
+        "prompt": "remy, professional portrait",
+        "request_id": "test-001",
+        "performance": "Speed"
+      },
+      "timeout": 60000
+    },
+    {
+      "name": "test_queue_processing",
+      "input": {
+        "prompt": "beautiful landscape with mountains",
+        "request_id": "test-002",
+        "performance": "Quality"
+      },
+      "timeout": 120000
+    },
+    {
+      "name": "test_multi_lora",
+      "input": {
+        "prompt": "remy in casual outfit",
+        "request_id": "test-003",
+        "loras": [
+          {"enabled": true, "name": "remy.safetensors", "weight": 0.94},
+          {"enabled": true, "name": "RealVisXL_V5.0_fp32.safetensors", "weight": 0.6},
+          {"enabled": true, "name": "super-realism.safetensors", "weight": 0.69}
+        ]
+      },
+      "timeout": 90000
+    }
+  ],
+  "config": {
+    "gpuTypeId": "NVIDIA GeForce RTX 4090",
+    "gpuCount": 1,
+    "env": [
+      {
+        "key": "NEXTJS_API_URL",
+        "value": "http://test-api.local"
+      },
+      {
+        "key": "WORKER_ID",
+        "value": "test-worker"
+      },
+      {
+        "key": "POLL_INTERVAL",
+        "value": "1"
+      }
+    ],
+    "allowedCudaVersions": [
+      "12.1",
+      "11.8",
+      "11.7"
+    ]
+  }
+}

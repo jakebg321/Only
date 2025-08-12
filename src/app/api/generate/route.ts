@@ -1,15 +1,29 @@
 import { NextResponse } from "next/server";
 
-const requestQueue: { 
-  id: number; 
-  userId: string; 
-  userName?: string;
-  prompt: string; 
-  requestType?: string;
-  urgency?: string;
-  status: string;
-  timestamp: string;
-}[] = [];
+// Use global queue that can be accessed from other routes
+const getQueue = () => {
+  if (!global.requestQueue) {
+    global.requestQueue = [];
+  }
+  return global.requestQueue;
+};
+
+// Declare global type
+declare global {
+  var requestQueue: {
+    id: number;
+    userId: string;
+    userName?: string;
+    prompt: string;
+    requestType?: string;
+    urgency?: string;
+    status: string;
+    timestamp: string;
+    workerId?: string;
+    updatedAt?: string;
+    result?: any;
+  }[] | undefined;
+}
 
 // Function to send webhook notification to local computer
 async function sendLocalNotification(requestData: any) {
@@ -81,7 +95,8 @@ export async function POST(request: Request) {
   };
   
   // Add to queue
-  requestQueue.push(newRequest);
+  const queue = getQueue();
+  queue.push(newRequest);
   
   // Send notification to local computer
   const notificationResult = await sendLocalNotification({
@@ -110,14 +125,16 @@ export async function POST(request: Request) {
 }
 
 export async function GET() {
+  const queue = getQueue();
   return NextResponse.json({
     message: "Image generation request queue",
-    queue: requestQueue,
-    queueLength: requestQueue.length,
+    queue: queue,
+    queueLength: queue.length,
     stats: {
-      pending: requestQueue.filter(r => r.status === 'pending').length,
-      processing: requestQueue.filter(r => r.status === 'processing').length,
-      completed: requestQueue.filter(r => r.status === 'completed').length,
+      pending: queue.filter(r => r.status === 'pending').length,
+      processing: queue.filter(r => r.status === 'processing').length,
+      completed: queue.filter(r => r.status === 'completed').length,
+      failed: queue.filter(r => r.status === 'failed').length,
     }
   });
 } 

@@ -1,3 +1,7 @@
+[![RunPod](https://api.runpod.io/badge/jakebg321/Only)](https://console.runpod.io/hub/jakebg321/Only)
+
+# AI Content Platform with Fooocus Integration
+
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
 ## Getting Started
