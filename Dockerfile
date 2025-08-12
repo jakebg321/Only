@@ -1,5 +1,5 @@
 # RunPod Dockerfile for Fooocus Worker
-FROM runpod/pytorch:2.1.0-py3.10-cuda11.8.0-devel-ubuntu22.04
+FROM runpod/pytorch:2.0.1-py3.10-cuda11.8.0-devel-ubuntu22.04
 
 # Set working directory
 WORKDIR /workspace
