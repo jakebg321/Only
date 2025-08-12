@@ -17,7 +17,7 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # Configuration from environment
-NEXTJS_API_URL = os.getenv('NEXTJS_API_URL', 'https://your-app.vercel.app')
+NEXTJS_API_URL = os.getenv('NEXTJS_API_URL', 'https://iq-4ru0.onrender.com')
 POLL_INTERVAL = int(os.getenv('POLL_INTERVAL', '5'))
 WORKER_ID = os.getenv('WORKER_ID', 'runpod-001')
 API_KEY = os.getenv('API_KEY', '')  # Optional auth key

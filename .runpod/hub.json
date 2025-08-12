@@ -12,7 +12,7 @@
       {
         "name": "Production",
         "defaults": {
-          "NEXTJS_API_URL": "https://your-app.vercel.app",
+          "NEXTJS_API_URL": "https://iq-4ru0.onrender.com",
           "POLL_INTERVAL": "5",
           "WORKER_ID": "runpod-001"
         }
@@ -32,8 +32,8 @@
         "input": {
           "name": "Next.js API URL",
           "type": "string",
-          "description": "Your Next.js app URL (e.g., https://your-app.vercel.app)",
-          "default": "https://your-app.vercel.app",
+          "description": "Your Next.js app URL (e.g., https://your-app.onrender.com)",
+          "default": "https://iq-4ru0.onrender.com",
           "required": true
         }
       },
