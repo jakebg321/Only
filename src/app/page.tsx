@@ -2,150 +2,308 @@
 
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Zap, DollarSign, Star, TrendingUp } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
+import { Heart, MessageCircle, Camera, Star } from "lucide-react";
+import { useState, useEffect } from "react";
 
 export default function Home() {
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  
+  // Gallery images from public/Remy folder
+  const galleryImages = [
+    "/Remy/2025-08-08_17-13-44_4613.png",
+    "/Remy/2025-08-08_17-16-07_7611.png",
+    "/Remy/2025-08-08_17-17-46_1630.png",
+    "/Remy/2025-08-08_17-18-07_9564.png",
+    "/Remy/2025-08-08_17-19-29_2534.png",
+    "/Remy/2025-08-08_17-51-26_7687.png",
+    "/Remy/2025-08-08_17-51-59_8602.png",
+    "/Remy/2025-08-08_17-54-29_4725.png",
+    "/Remy/2025-08-08_17-55-01_4208.png",
+    "/Remy/2025-08-08_17-55-18_7285.png",
+    "/Remy/2025-08-08_17-55-34_9355.png",
+    "/Remy/2025-08-08_17-55-51_2971.png",
+    "/Remy/2025-08-08_18-00-27_8511.png",
+    "/Remy/2025-08-08_18-05-32_6162.png",
+    "/Remy/2025-08-08_18-06-06_1789.png",
+    "/Remy/2025-08-08_18-06-24_3963.png",
+    "/Remy/2025-08-08_18-09-53_1543.png",
+    "/Remy/2025-08-08_18-10-28_1308.png"
+  ];
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentImageIndex((prev) => (prev + 1) % galleryImages.length);
+    }, 5000); // Change image every 5 seconds
+    return () => clearInterval(interval);
+  }, [galleryImages.length]);
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
-      {/* Hero Section */}
-      <section className="relative pt-32 pb-20 px-4">
-        <div className="container mx-auto text-center">
-          <div className="mb-8">
-            <h1 className="text-6xl md:text-7xl font-bold mb-6 bg-gradient-to-r from-purple-400 via-pink-500 to-red-500 bg-clip-text text-transparent">
-              Only Twins Platform
-            </h1>
-            <p className="text-2xl md:text-3xl font-semibold text-gray-300 mb-4">
-              The Future of Content Creation is Here
-            </p>
-            <p className="text-xl text-gray-400 max-w-4xl mx-auto leading-relaxed">
-              Deploy your AI twin to generate personalized content 24/7. Scale your OnlyFans empire 
-              while you sleep. Earn 10x more with zero extra effort.
-            </p>
-          </div>
-          
-          <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
-            <Link href="/auth">
-              <Button size="lg" className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white px-8 py-4 text-lg font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-300">
-                Start Free Trial
-              </Button>
-            </Link>
-            <Link href="/manager">
-              <Button size="lg" variant="outline" className="border-purple-500 text-purple-400 hover:bg-purple-500 hover:text-white px-8 py-4 text-lg font-semibold rounded-xl transition-all duration-300">
-                See Demo
-              </Button>
-            </Link>
-          </div>
-
-          {/* Stats Bar */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-16">
-            <div className="text-center">
-              <div className="text-4xl font-bold text-green-400 mb-2">$2.5M+</div>
-              <div className="text-gray-400">Revenue Generated</div>
+      {/* Hero Section with Profile */}
+      <section className="relative pt-24 pb-12 px-4">
+        <div className="container mx-auto max-w-6xl">
+          {/* Profile Header */}
+          <div className="flex flex-col md:flex-row items-center md:items-start gap-8 mb-12">
+            {/* Profile Image */}
+            <div className="relative">
+              <div className="w-48 h-48 rounded-full overflow-hidden border-4 border-pink-500 shadow-2xl">
+                <img 
+                  src="/Remy/2025-08-08_17-13-44_4613.png" 
+                  alt="Remy" 
+                  className="w-full h-full object-cover"
+                />
+              </div>
+              <div className="absolute bottom-2 right-2 bg-green-500 w-6 h-6 rounded-full border-2 border-white"></div>
             </div>
-            <div className="text-center">
-              <div className="text-4xl font-bold text-purple-400 mb-2">50,000+</div>
-              <div className="text-gray-400">AI Messages Sent</div>
-            </div>
-            <div className="text-center">
-              <div className="text-4xl font-bold text-pink-400 mb-2">High</div>
-              <div className="text-gray-400">Creator Satisfaction</div>
+
+            {/* Profile Info */}
+            <div className="flex-1 text-center md:text-left">
+              <h1 className="text-5xl font-bold mb-2 bg-gradient-to-r from-purple-400 via-pink-500 to-red-500 bg-clip-text text-transparent">
+                Hey babe, I'm Remy 💋
+              </h1>
+              <p className="text-xl text-gray-300 mb-2">
+                Welcome to my exclusive world 💕
+              </p>
+              <p className="text-lg text-pink-300 mb-4 font-medium">
+                My schedule is getting so busy... but I always make time for my special fans
+              </p>
+              <div className="flex gap-4 justify-center md:justify-start mb-6">
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-pink-400">1.2K</div>
+                  <div className="text-sm text-gray-400">Personal Photos</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-purple-400">&lt; 2min</div>
+                  <div className="text-sm text-gray-400">Response Time</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-yellow-400">⭐⭐⭐⭐⭐</div>
+                  <div className="text-sm text-gray-400">Top 0.1% Creator</div>
+                </div>
+              </div>
+              
+              {/* Action Buttons */}
+              <div className="flex gap-4 justify-center md:justify-start">
+                <Link href="/chat">
+                  <Button size="lg" className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700">
+                    <MessageCircle className="w-5 h-5 mr-2" />
+                    Chat With Me Personally
+                  </Button>
+                </Link>
+                <Link href="/gallery">
+                  <Button size="lg" variant="outline" className="border-purple-500 text-purple-400 hover:bg-purple-500 hover:text-white">
+                    <Camera className="w-5 h-5 mr-2" />
+                    See My Private Collection 🔥
+                  </Button>
+                </Link>
+              </div>
             </div>
           </div>
-        </div>
-      </section>
 
-      {/* Benefits Section */}
-      <section className="py-20 px-4">
-        <div className="container mx-auto">
-          <h2 className="text-5xl font-bold mb-4 text-center bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
-            Why Top Creators Choose Only Twins
-          </h2>
-          <p className="text-xl text-gray-400 text-center mb-16 max-w-3xl mx-auto">
-            Join the revolution. Stop trading time for money. Start scaling with AI.
-          </p>
-          
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-16">
-            <Card className="bg-black/40 border-purple-500/20 hover:border-purple-500/40 transition-all duration-300 backdrop-blur-sm">
-              <CardHeader>
-                <CardTitle className="flex items-center text-2xl">
-                  <DollarSign className="w-8 h-8 mr-3 text-green-400" />
-                  10x Your Revenue
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-gray-300 text-lg leading-relaxed">
-                  Your AI twin works 24/7, engaging subscribers with personalized content. 
-                  Top creators report significant revenue increases within 30 days.
-                </p>
-              </CardContent>
-            </Card>
+          {/* Bio Section */}
+          <Card className="bg-black/40 border-purple-500/20 backdrop-blur-sm mb-12">
+            <CardContent className="p-6">
+              <h2 className="text-2xl font-bold mb-4 text-pink-400">About Me</h2>
+              <p className="text-gray-300 leading-relaxed mb-4">
+                Hey babe! Welcome to my personal space 😘 I'm Remy, and unlike other creators, I personally read and respond to EVERY message. 
+                I love building real connections with the fans who truly appreciate me. When you message me, you're talking directly to ME - not some manager. 
+                I remember our conversations, your preferences, and what makes you happy. Let me be your escape from the ordinary 💕
+              </p>
+              <div className="bg-gradient-to-r from-purple-900/30 to-pink-900/30 rounded-lg p-4 mb-4 border border-pink-500/20">
+                <p className="text-pink-200 text-sm font-medium mb-2">💯 My Personal Guarantee:</p>
+                <ul className="text-gray-300 text-sm space-y-1">
+                  <li>• I personally respond within 2 hours (usually much faster!)</li>
+                  <li>• Every custom request gets my full attention and effort</li>
+                  <li>• I remember what you like and surprise you with it</li>
+                  <li>• Your messages stay between just you and me</li>
+                </ul>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <span className="px-3 py-1 bg-purple-900/50 rounded-full text-sm text-purple-300">🏋️‍♀️ Gym Selfies</span>
+                <span className="px-3 py-1 bg-purple-900/50 rounded-full text-sm text-purple-300">👙 Lingerie</span>
+                <span className="px-3 py-1 bg-purple-900/50 rounded-full text-sm text-purple-300">🎥 Custom Videos</span>
+                <span className="px-3 py-1 bg-purple-900/50 rounded-full text-sm text-purple-300">💬 Sexting</span>
+                <span className="px-3 py-1 bg-purple-900/50 rounded-full text-sm text-purple-300">🔥 Daily Content</span>
+              </div>
+            </CardContent>
+          </Card>
 
-            <Card className="bg-black/40 border-purple-500/20 hover:border-purple-500/40 transition-all duration-300 backdrop-blur-sm">
-              <CardHeader>
-                <CardTitle className="flex items-center text-2xl">
-                  <Zap className="w-8 h-8 mr-3 text-yellow-400" />
-                  Reclaim Your Life
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-gray-300 text-lg leading-relaxed">
-                  Stop being glued to your phone. Your AI handles most subscriber interactions 
-                  while maintaining your authentic voice and personality.
-                </p>
-              </CardContent>
-            </Card>
+          {/* Testimonials Section */}
+          <div className="mb-12">
+            <h2 className="text-3xl font-bold mb-8 text-center bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
+              What My Special Fans Say 💕
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <Card className="bg-black/40 border-purple-500/20 backdrop-blur-sm">
+                <CardContent className="p-6">
+                  <div className="flex items-center mb-4">
+                    <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center text-white font-bold">
+                      M
+                    </div>
+                    <div className="ml-3">
+                      <p className="font-semibold text-white">Mike_VIP</p>
+                      <div className="text-yellow-400 text-sm">⭐⭐⭐⭐⭐</div>
+                    </div>
+                  </div>
+                  <p className="text-gray-300 text-sm italic">
+                    "Remy actually remembers everything about me. She asked about my work presentation that I mentioned weeks ago. That's real connection!"
+                  </p>
+                </CardContent>
+              </Card>
 
-            <Card className="bg-black/40 border-purple-500/20 hover:border-purple-500/40 transition-all duration-300 backdrop-blur-sm">
-              <CardHeader>
-                <CardTitle className="flex items-center text-2xl">
-                  <TrendingUp className="w-8 h-8 mr-3 text-purple-400" />
-                  Scale Infinitely
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-gray-300 text-lg leading-relaxed">
-                  Manage unlimited subscribers without hiring assistants. 
-                  Your AI twin scales perfectly from 100 to 100,000 fans.
-                </p>
-              </CardContent>
-            </Card>
+              <Card className="bg-black/40 border-purple-500/20 backdrop-blur-sm">
+                <CardContent className="p-6">
+                  <div className="flex items-center mb-4">
+                    <div className="w-10 h-10 bg-gradient-to-r from-pink-500 to-red-500 rounded-full flex items-center justify-center text-white font-bold">
+                      J
+                    </div>
+                    <div className="ml-3">
+                      <p className="font-semibold text-white">James_Close</p>
+                      <div className="text-yellow-400 text-sm">⭐⭐⭐⭐⭐</div>
+                    </div>
+                  </div>
+                  <p className="text-gray-300 text-sm italic">
+                    "I've tried other creators but Remy responds personally within minutes. She actually cares and puts real effort into everything she sends."
+                  </p>
+                </CardContent>
+              </Card>
+
+              <Card className="bg-black/40 border-purple-500/20 backdrop-blur-sm">
+                <CardContent className="p-6">
+                  <div className="flex items-center mb-4">
+                    <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full flex items-center justify-center text-white font-bold">
+                      D
+                    </div>
+                    <div className="ml-3">
+                      <p className="font-semibold text-white">David_Special</p>
+                      <div className="text-yellow-400 text-sm">⭐⭐⭐⭐⭐</div>
+                    </div>
+                  </div>
+                  <p className="text-gray-300 text-sm italic">
+                    "The custom content is incredible. You can tell she spends real time making each request perfect. Worth every penny and more."
+                  </p>
+                </CardContent>
+              </Card>
+            </div>
           </div>
 
-          {/* Social Proof */}
-          <div className="text-center mb-16">
-            <h3 className="text-3xl font-bold mb-8 text-white">Trusted by Top Performers</h3>
-            <div className="flex justify-center items-center gap-8 mb-8">
-              {[1, 2, 3, 4, 5].map((star) => (
-                <Star key={star} className="w-8 h-8 text-yellow-400 fill-current" />
+          {/* Subscription Tiers */}
+          <div className="mb-12">
+            <h2 className="text-3xl font-bold mb-6 text-center bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
+              Choose Your Connection Level 💕
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {/* Sweet Fan Tier */}
+              <Card className="bg-black/40 border-purple-500/20 backdrop-blur-sm hover:border-purple-400/40 transition-all">
+                <CardContent className="p-6 text-center">
+                  <h3 className="text-xl font-bold text-purple-400 mb-2">Sweet Fan</h3>
+                  <div className="text-3xl font-bold text-white mb-4">$25<span className="text-lg text-gray-400">/month</span></div>
+                  <ul className="text-gray-300 space-y-2 text-left mb-6">
+                    <li className="flex items-center gap-2"><span className="text-pink-400">💕</span> Daily personal messages</li>
+                    <li className="flex items-center gap-2"><span className="text-pink-400">📸</span> Exclusive daily photos</li>
+                    <li className="flex items-center gap-2"><span className="text-pink-400">💬</span> Chat access with me</li>
+                    <li className="flex items-center gap-2"><span className="text-pink-400">🎁</span> Welcome gift package</li>
+                  </ul>
+                  <Button className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700">
+                    Start Our Connection
+                  </Button>
+                </CardContent>
+              </Card>
+
+              {/* Close Friend Tier */}
+              <Card className="bg-black/40 border-pink-500/40 backdrop-blur-sm hover:border-pink-400/60 transition-all transform scale-105">
+                <CardContent className="p-6 text-center relative">
+                  <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-gradient-to-r from-pink-500 to-purple-500 text-white px-4 py-1 rounded-full text-sm font-bold">
+                    Most Popular 🔥
+                  </div>
+                  <h3 className="text-xl font-bold text-pink-400 mb-2 mt-2">Close Friend</h3>
+                  <div className="text-3xl font-bold text-white mb-4">$75<span className="text-lg text-gray-400">/month</span></div>
+                  <ul className="text-gray-300 space-y-2 text-left mb-6">
+                    <li className="flex items-center gap-2"><span className="text-pink-400">💝</span> Everything from Sweet Fan</li>
+                    <li className="flex items-center gap-2"><span className="text-pink-400">🎨</span> Custom photo requests</li>
+                    <li className="flex items-center gap-2"><span className="text-pink-400">⚡</span> Priority responses</li>
+                    <li className="flex items-center gap-2"><span className="text-pink-400">🌅</span> Good morning texts</li>
+                    <li className="flex items-center gap-2"><span className="text-pink-400">📱</span> Behind-the-scenes content</li>
+                  </ul>
+                  <Button className="w-full bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-700 hover:to-purple-700">
+                    Get Closer to Me
+                  </Button>
+                </CardContent>
+              </Card>
+
+              {/* Special Someone Tier */}
+              <Card className="bg-black/40 border-yellow-500/20 backdrop-blur-sm hover:border-yellow-400/40 transition-all">
+                <CardContent className="p-6 text-center">
+                  <h3 className="text-xl font-bold text-yellow-400 mb-2">Special Someone</h3>
+                  <div className="text-3xl font-bold text-white mb-4">$150<span className="text-lg text-gray-400">/month</span></div>
+                  <ul className="text-gray-300 space-y-2 text-left mb-6">
+                    <li className="flex items-center gap-2"><span className="text-yellow-400">👑</span> Everything from Close Friend</li>
+                    <li className="flex items-center gap-2"><span className="text-yellow-400">📹</span> Private video calls</li>
+                    <li className="flex items-center gap-2"><span className="text-yellow-400">🎥</span> Custom video requests</li>
+                    <li className="flex items-center gap-2"><span className="text-yellow-400">💭</span> Personal stories & secrets</li>
+                    <li className="flex items-center gap-2"><span className="text-yellow-400">⭐</span> Daily check-ins</li>
+                  </ul>
+                  <Button className="w-full bg-gradient-to-r from-yellow-600 to-orange-600 hover:from-yellow-700 hover:to-orange-700">
+                    Be My Special One
+                  </Button>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+
+          {/* Featured Content Preview */}
+          <div className="mb-12">
+            <h2 className="text-3xl font-bold mb-6 text-center bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
+              My Latest Content 🔥
+            </h2>
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+              {galleryImages.slice(0, 8).map((image, index) => (
+                <div key={index} className="relative group cursor-pointer">
+                  <div className="aspect-square rounded-lg overflow-hidden bg-gray-800">
+                    <img 
+                      src={image} 
+                      alt={`Gallery ${index + 1}`}
+                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end justify-center pb-4">
+                      <Link href="/gallery">
+                        <Button size="sm" className="bg-pink-600 hover:bg-pink-700">
+                          View More
+                        </Button>
+                      </Link>
+                    </div>
+                  </div>
+                </div>
               ))}
             </div>
-            <p className="text-xl text-gray-300 mb-4">&quot;Increased my monthly revenue significantly in just 6 weeks&quot;</p>
-            <p className="text-purple-400 font-semibold">- Sarah M., Top Creator</p>
+            <div className="text-center mt-8">
+              <Link href="/gallery">
+                <Button size="lg" variant="outline" className="border-purple-500 text-purple-400 hover:bg-purple-500 hover:text-white">
+                  <Camera className="w-5 h-5 mr-2" />
+                  Enter My Private Gallery (1,200+ Personal Photos)
+                </Button>
+              </Link>
+            </div>
           </div>
 
-          {/* CTA Section */}
-          <div className="bg-gradient-to-r from-purple-900/50 to-pink-900/50 rounded-2xl p-12 text-center backdrop-blur-sm border border-purple-500/20">
-            <h3 className="text-4xl font-bold mb-4 text-white">Ready to 10x Your OnlyFans?</h3>
-            <p className="text-xl text-gray-300 mb-8 max-w-2xl mx-auto">
-              Join 500+ creators already earning more while working less. 
-              Start your free trial today - no credit card required.
-            </p>
-            <Link href="/auth">
-              <Button size="lg" className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white px-12 py-6 text-xl font-bold rounded-xl shadow-2xl hover:shadow-purple-500/25 transition-all duration-300">
-                Start Free Trial Now
-              </Button>
-            </Link>
-          </div>
+          {/* Call to Action */}
+          <Card className="bg-gradient-to-r from-purple-900/50 to-pink-900/50 border-pink-500/30 backdrop-blur-sm">
+            <CardContent className="p-8 text-center">
+              <h3 className="text-3xl font-bold mb-4 text-white">Come get to know the real me 😈</h3>
+              <p className="text-xl text-gray-200 mb-6">
+                I'm online right now and would love to chat with you personally! I put so much care into every conversation... Let me show you what makes me special 💦
+              </p>
+              <Link href="/chat">
+                <Button size="lg" className="bg-white text-purple-900 hover:bg-gray-100 font-bold px-8 py-4 text-lg">
+                  <Heart className="w-6 h-6 mr-2 text-pink-500" />
+                  Message Me Now 💋
+                </Button>
+              </Link>
+            </CardContent>
+          </Card>
         </div>
       </section>
-
-      {/* Footer */}
-      <footer className="py-12 px-4 border-t border-gray-800">
-        <div className="container mx-auto text-center">
-          <p className="text-gray-400">&copy; 2024 Only Twins Platform. All rights reserved.</p>
-        </div>
-      </footer>
     </div>
   );
 }

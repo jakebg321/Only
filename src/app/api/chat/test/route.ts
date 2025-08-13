@@ -44,7 +44,7 @@ export async function POST(request: Request) {
     };
 
     const testPersonality = {
-      displayName: personality.name || 'Sophia',
+      displayName: personality.name || 'Remy',
       tone: (personality.tone || 'FLIRTY') as PersonalityTone,
       personalityTraits: getTraitsForTone(personality.tone),
       interests: personality.interests || ['fitness', 'fashion', 'photography', 'lingerie', 'dancing'],

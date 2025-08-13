@@ -34,7 +34,7 @@ interface Personality {
 }
 
 const DEFAULT_PERSONALITY: Personality = {
-  name: "Sophia",
+  name: "Remy",
   tone: "FLIRTY",
   flirtLevel: 5,
   explicitLevel: 2,
@@ -47,7 +47,7 @@ const DEFAULT_PERSONALITY: Personality = {
 
 const PRESET_PERSONALITIES = {
   flirty: {
-    name: "Sophia",
+    name: "Remy",
     tone: "FLIRTY",
     flirtLevel: 5,
     explicitLevel: 2,
@@ -237,8 +237,8 @@ export default function Chat() {
       id: Date.now().toString(),
       role: 'assistant',
       content: type === 'image' 
-        ? `What kind of custom photo would you like of me? Describe what you want to see... 📸`
-        : `What kind of custom video would you like? Tell me your fantasy... 🎥`,
+        ? `What kind of personal photo should I create just for you? I love putting extra time and care into making something special... Tell me your vision 📸`
+        : `I'm excited to create something intimate just for you! What kind of personal video experience do you want me to craft? I'll put my heart into it... 🎥`,
       timestamp: new Date()
     };
     setMessages(prev => [...prev, askMessage]);
@@ -271,7 +271,7 @@ export default function Chat() {
         const requestMessage: Message = {
           id: Date.now().toString(),
           role: 'assistant',
-          content: `Got it! 😘 I'll create that ${imageRequestType} for you... Give me a moment to make it perfect for you 💕`,
+          content: `Perfect! 😘 I'm so excited to create this ${imageRequestType} personally for you... I'm going to put all my energy into making it absolutely perfect for you 💕`,
           timestamp: new Date(),
           requestId: data.requestId,
           generationStatus: 'pending'
@@ -371,8 +371,8 @@ export default function Chat() {
       id: Date.now().toString(),
       role: 'assistant',
       content: userName 
-        ? `*Switching to ${personalityName}* Hey ${userName} 😊 I'm in a different mood now...`
-        : `*Switching to ${personalityName}* Hey you 😊 What should I call you?`,
+        ? `*Getting in a ${personalityName} mood* Mmm hey ${userName} 😈 I'm feeling different now...`
+        : `*Getting in a ${personalityName} mood* Hey sexy 😈 What should I call you?`,
       timestamp: new Date()
     };
     setMessages(prev => [...prev, transitionMessage]);
@@ -476,10 +476,10 @@ export default function Chat() {
         <Card className="max-w-2xl w-full mx-4 bg-black/40 border-purple-500/20 backdrop-blur-sm">
           <CardHeader className="text-center">
             <CardTitle className="text-4xl bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
-              AI Chat Experience
+              Chat Experience
             </CardTitle>
             <p className="text-gray-300 mt-4 text-lg">
-              Experience the future of personalized content creation
+              Experience personalized content creation
             </p>
           </CardHeader>
           <CardContent className="space-y-6">
@@ -514,7 +514,7 @@ export default function Chat() {
                 <User className="mr-2" />
                 Quick Setup Your Own
               </Button>
-              <p className="text-sm text-gray-400">Create your own AI personality</p>
+              <p className="text-sm text-gray-400">Create your own personality</p>
             </div>
           </CardContent>
         </Card>
@@ -528,7 +528,7 @@ export default function Chat() {
         <Card className="max-w-2xl w-full mx-4 bg-black/40 border-purple-500/20 backdrop-blur-sm">
           <CardHeader>
             <CardTitle className="text-2xl">Quick Personality Setup</CardTitle>
-            <p className="text-gray-400">Set up your AI chat personality</p>
+            <p className="text-gray-400">Set up your chat personality</p>
           </CardHeader>
           <CardContent className="space-y-4">
             <div>
