@@ -227,7 +227,7 @@ export default function Chat() {
     }, 3000); // Poll every 3 seconds
   };
 
-  const requestCustomImage = async (type = 'image') => {
+  const requestCustomImage = async (type: 'image' | 'video' = 'image') => {
     // Set state to await image description
     setAwaitingImageDescription(true);
     setImageRequestType(type);

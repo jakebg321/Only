@@ -3,12 +3,9 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Heart, MessageCircle, Camera, Star } from "lucide-react";
-import { useState, useEffect } from "react";
+import { Heart, MessageCircle, Camera } from "lucide-react";
 
 export default function Home() {
-  const [currentImageIndex, setCurrentImageIndex] = useState(0);
-  
   // Gallery images from public/Remy folder
   const galleryImages = [
     "/Remy/2025-08-08_17-13-44_4613.png",
@@ -30,13 +27,6 @@ export default function Home() {
     "/Remy/2025-08-08_18-09-53_1543.png",
     "/Remy/2025-08-08_18-10-28_1308.png"
   ];
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setCurrentImageIndex((prev) => (prev + 1) % galleryImages.length);
-    }, 5000); // Change image every 5 seconds
-    return () => clearInterval(interval);
-  }, [galleryImages.length]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
@@ -106,19 +96,11 @@ export default function Home() {
             <CardContent className="p-6">
               <h2 className="text-2xl font-bold mb-4 text-pink-400">About Me</h2>
               <p className="text-gray-300 leading-relaxed mb-4">
-                Hey babe! Welcome to my personal space 😘 I'm Remy, and unlike other creators, I personally read and respond to EVERY message. 
-                I love building real connections with the fans who truly appreciate me. When you message me, you're talking directly to ME - not some manager. 
-                I remember our conversations, your preferences, and what makes you happy. Let me be your escape from the ordinary 💕
+                Hey there! Welcome to my world 😘 I'm Remy, a 24-year-old content creator who genuinely loves connecting with my fans. 
+                I handle all my own messages because I actually enjoy getting to know the people who support me. 
+                Drop me a message - I'm usually pretty quick to respond and I love hearing from you! 
+                Let me be your fun escape from the everyday 💕
               </p>
-              <div className="bg-gradient-to-r from-purple-900/30 to-pink-900/30 rounded-lg p-4 mb-4 border border-pink-500/20">
-                <p className="text-pink-200 text-sm font-medium mb-2">💯 My Personal Guarantee:</p>
-                <ul className="text-gray-300 text-sm space-y-1">
-                  <li>• I personally respond within 2 hours (usually much faster!)</li>
-                  <li>• Every custom request gets my full attention and effort</li>
-                  <li>• I remember what you like and surprise you with it</li>
-                  <li>• Your messages stay between just you and me</li>
-                </ul>
-              </div>
               <div className="flex flex-wrap gap-2">
                 <span className="px-3 py-1 bg-purple-900/50 rounded-full text-sm text-purple-300">🏋️‍♀️ Gym Selfies</span>
                 <span className="px-3 py-1 bg-purple-900/50 rounded-full text-sm text-purple-300">👙 Lingerie</span>
