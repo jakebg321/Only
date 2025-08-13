@@ -101,6 +101,8 @@ export default function Chat() {
   const [tempPersonality, setTempPersonality] = useState<Personality>(DEFAULT_PERSONALITY);
   const [showSettings, setShowSettings] = useState(false);
   const [customPersonalities, setCustomPersonalities] = useState<any[]>([]);
+  const [awaitingImageDescription, setAwaitingImageDescription] = useState(false);
+  const [imageRequestType, setImageRequestType] = useState<'image' | 'video'>('image');
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -226,17 +228,28 @@ export default function Chat() {
   };
 
   const requestCustomImage = async (type = 'image') => {
+    // Set state to await image description
+    setAwaitingImageDescription(true);
+    setImageRequestType(type);
+    
+    // Add assistant message asking for description
+    const askMessage: Message = {
+      id: Date.now().toString(),
+      role: 'assistant',
+      content: type === 'image' 
+        ? `What kind of custom photo would you like of me? Describe what you want to see... 📸`
+        : `What kind of custom video would you like? Tell me your fantasy... 🎥`,
+      timestamp: new Date()
+    };
+    setMessages(prev => [...prev, askMessage]);
+  };
+
+  const submitImageRequest = async (description: string) => {
     const userName = 'Jake'; // Get from user context later
     const userId = 'user_jake'; // Get from user context later
     
-    let prompt = '';
-    if (type === 'image') {
-      prompt = window.prompt('What kind of custom photo would you like? Describe it:') || '';
-    } else if (type === 'video') {
-      prompt = window.prompt('What kind of custom video would you like? Describe it:') || '';
-    }
-    
-    if (!prompt.trim()) return;
+    // ALWAYS prefix with "Remy,"
+    const prompt = `Remy, ${description}`;
     
     try {
       const response = await fetch('/api/generate', {
@@ -246,7 +259,7 @@ export default function Chat() {
           prompt,
           userId,
           userName,
-          requestType: type === 'video' ? 'custom_video' : 'custom_image',
+          requestType: imageRequestType === 'video' ? 'custom_video' : 'custom_image',
           urgency: 'normal'
         })
       });
@@ -258,7 +271,7 @@ export default function Chat() {
         const requestMessage: Message = {
           id: Date.now().toString(),
           role: 'assistant',
-          content: `Got your request! 📋 I'll work on your custom ${type} and send it to you soon. Request #${data.requestId}${data.localNotification?.success ? ' (Creator notified!)' : ' (Will notify creator when available)'}`,
+          content: `Got it! 😘 I'll create that ${imageRequestType} for you... Give me a moment to make it perfect for you 💕`,
           timestamp: new Date(),
           requestId: data.requestId,
           generationStatus: 'pending'
@@ -277,11 +290,14 @@ export default function Chat() {
       const errorMessage: Message = {
         id: Date.now().toString(),
         role: 'assistant',
-        content: `Sorry, there was an issue submitting your request. Try again?`,
+        content: `Sorry baby, something went wrong. Try again? 💔`,
         timestamp: new Date()
       };
       setMessages(prev => [...prev, errorMessage]);
     }
+    
+    // Reset the awaiting state
+    setAwaitingImageDescription(false);
   };
 
   const startDemo = () => {
@@ -375,6 +391,14 @@ export default function Chat() {
 
     setMessages(prev => [...prev, userMessage]);
     setInput("");
+
+    // Check if we're waiting for an image description
+    if (awaitingImageDescription) {
+      // User is providing image description
+      await submitImageRequest(input);
+      return;
+    }
+
     setIsLoading(true);
     
     // Update message status to sent after a brief delay
@@ -801,30 +825,47 @@ export default function Chat() {
               <div className="p-4 border-t border-gray-700">
                 {/* Quick Action Buttons */}
                 <div className="flex gap-2 mb-3 flex-wrap">
-                  <Button
-                    onClick={() => requestCustomImage()}
-                    size="sm"
-                    variant="outline"
-                    className="text-xs border-purple-500 text-purple-400 hover:bg-purple-500 hover:text-white"
-                  >
-                    📸 Request Custom Pic
-                  </Button>
-                  <Button
-                    onClick={() => requestCustomImage('video')}
-                    size="sm"
-                    variant="outline"
-                    className="text-xs border-pink-500 text-pink-400 hover:bg-pink-500 hover:text-white"
-                  >
-                    🎥 Request Video
-                  </Button>
+                  {awaitingImageDescription ? (
+                    <Button
+                      onClick={() => setAwaitingImageDescription(false)}
+                      size="sm"
+                      variant="outline"
+                      className="text-xs border-red-500 text-red-400 hover:bg-red-500 hover:text-white"
+                    >
+                      ❌ Cancel Request
+                    </Button>
+                  ) : (
+                    <>
+                      <Button
+                        onClick={() => requestCustomImage()}
+                        size="sm"
+                        variant="outline"
+                        className="text-xs border-purple-500 text-purple-400 hover:bg-purple-500 hover:text-white"
+                      >
+                        📸 Request Custom Pic
+                      </Button>
+                      <Button
+                        onClick={() => requestCustomImage('video')}
+                        size="sm"
+                        variant="outline"
+                        className="text-xs border-pink-500 text-pink-400 hover:bg-pink-500 hover:text-white"
+                      >
+                        🎥 Request Video
+                      </Button>
+                    </>
+                  )}
                 </div>
                 
                 <div className="flex gap-2">
                   <Textarea
                     value={input}
                     onChange={(e) => setInput(e.target.value)}
-                    placeholder={`Message ${personality.name}...`}
-                    className="flex-1 bg-gray-800 border-gray-600 text-white resize-none"
+                    placeholder={awaitingImageDescription 
+                      ? `Describe what you want to see... (e.g., "in a red bikini by the pool")`
+                      : `Message ${personality.name}...`}
+                    className={`flex-1 bg-gray-800 border-gray-600 text-white resize-none ${
+                      awaitingImageDescription ? 'border-pink-500 border-2' : ''
+                    }`}
                     rows={2}
                     onKeyPress={(e) => {
                       if (e.key === 'Enter' && !e.shiftKey) {
