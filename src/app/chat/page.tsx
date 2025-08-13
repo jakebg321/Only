@@ -16,6 +16,9 @@ interface Message {
   content: string;
   timestamp: Date;
   status?: 'sending' | 'sent' | 'delivered' | 'read';
+  imageData?: string;
+  requestId?: number;
+  generationStatus?: 'pending' | 'processing' | 'completed' | 'failed';
 }
 
 interface Personality {
@@ -160,6 +163,68 @@ export default function Chat() {
     }
   };
 
+  const pollForImageResult = async (requestId: number, messageId: string) => {
+    const maxAttempts = 60; // Poll for up to 3 minutes
+    let attempts = 0;
+    
+    const pollInterval = setInterval(async () => {
+      try {
+        const response = await fetch('/api/generate/queue');
+        const data = await response.json();
+        
+        const request = data.queue?.find((r: any) => r.id === requestId);
+        
+        if (request) {
+          // Update message status
+          setMessages(prev => prev.map(msg => 
+            msg.id === messageId 
+              ? { ...msg, generationStatus: request.status }
+              : msg
+          ));
+          
+          if (request.status === 'completed' && request.result?.imageData) {
+            // Image is ready!
+            clearInterval(pollInterval);
+            
+            // Update message with the image
+            setMessages(prev => prev.map(msg => 
+              msg.id === messageId 
+                ? { 
+                    ...msg, 
+                    content: '✨ Your custom image is ready!',
+                    imageData: request.result.imageData,
+                    generationStatus: 'completed'
+                  }
+                : msg
+            ));
+            
+            console.log('Image generation completed!');
+          } else if (request.status === 'failed') {
+            clearInterval(pollInterval);
+            
+            setMessages(prev => prev.map(msg => 
+              msg.id === messageId 
+                ? { 
+                    ...msg, 
+                    content: `Sorry, the image generation failed. ${request.result?.error || 'Please try again.'}`,
+                    generationStatus: 'failed'
+                  }
+                : msg
+            ));
+          }
+        }
+        
+        attempts++;
+        if (attempts >= maxAttempts) {
+          clearInterval(pollInterval);
+          console.log('Polling timeout');
+        }
+      } catch (error) {
+        console.error('Polling error:', error);
+      }
+    }, 3000); // Poll every 3 seconds
+  };
+
   const requestCustomImage = async (type = 'image') => {
     const userName = 'Jake'; // Get from user context later
     const userId = 'user_jake'; // Get from user context later
@@ -194,11 +259,16 @@ export default function Chat() {
           id: Date.now().toString(),
           role: 'assistant',
           content: `Got your request! 📋 I'll work on your custom ${type} and send it to you soon. Request #${data.requestId}${data.localNotification?.success ? ' (Creator notified!)' : ' (Will notify creator when available)'}`,
-          timestamp: new Date()
+          timestamp: new Date(),
+          requestId: data.requestId,
+          generationStatus: 'pending'
         };
         setMessages(prev => [...prev, requestMessage]);
         
         console.log('Custom content request submitted:', data);
+        
+        // Start polling for the result
+        pollForImageResult(data.requestId, requestMessage.id);
       } else {
         throw new Error(data.error || 'Failed to submit request');
       }
@@ -670,6 +740,25 @@ export default function Chat() {
                         }`}
                       >
                         <p className="whitespace-pre-wrap">{message.content}</p>
+                        {message.imageData && (
+                          <div className="mt-3">
+                            <img 
+                              src={`data:image/png;base64,${message.imageData}`} 
+                              alt="Generated content" 
+                              className="rounded-lg max-w-full"
+                            />
+                          </div>
+                        )}
+                        {message.generationStatus === 'processing' && (
+                          <div className="mt-2 text-xs opacity-70">
+                            🎨 Creating your image...
+                          </div>
+                        )}
+                        {message.generationStatus === 'pending' && (
+                          <div className="mt-2 text-xs opacity-70">
+                            ⏳ Waiting in queue...
+                          </div>
+                        )}
                         <div className="flex items-center justify-between mt-2">
                           <p className="text-xs opacity-70">
                             {message.timestamp.toLocaleTimeString()}
