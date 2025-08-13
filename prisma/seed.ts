@@ -6,6 +6,18 @@ const prisma = new PrismaClient();
 async function main() {
   console.log('🌱 Starting database seed...');
 
+  // Create TEST ACCOUNT for development
+  const testUser = await prisma.user.upsert({
+    where: { email: 'test@example.com' },
+    update: {},
+    create: {
+      email: 'test@example.com',
+      passwordHash: await bcrypt.hash('testpass123', 10),
+      role: UserRole.SUBSCRIBER,
+    },
+  });
+  console.log('✅ Created test account: test@example.com / testpass123');
+
   // Create test users
   const creatorUser = await prisma.user.upsert({
     where: { email: 'creator@example.com' },
@@ -66,6 +78,16 @@ async function main() {
       maxResponseLength: 300,
       enableEmojis: true,
       enableMediaSuggestions: true,
+    },
+  });
+
+  // Create test subscriber profile
+  const testSubscriber = await prisma.subscriber.upsert({
+    where: { userId: testUser.id },
+    update: {},
+    create: {
+      userId: testUser.id,
+      displayName: 'Test User',
     },
   });
 

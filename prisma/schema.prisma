@@ -229,3 +229,33 @@ model Analytics {
   @@unique([creatorId, date])
   @@index([creatorId, date])
 }
+
+model UserPreferences {
+  id              String      @id @default(cuid())
+  userId          String      @unique
+  preferredName   String?
+  interests       String[]
+  chatStyle       String?     // casual, flirty, romantic, friendly
+  customRequests  Json?       // Store frequently requested content types
+  rememberDetails Boolean     @default(true)
+  language        String      @default("en")
+  timezone        String      @default("UTC")
+  lastActive      DateTime    @default(now())
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+}
+
+model ConversationMemory {
+  id            String      @id @default(cuid())
+  userId        String
+  fact          String      // "likes coffee", "works in tech", "has a dog named Max"
+  confidence    Float       @default(0.5) // 0-1 based on how often mentioned
+  lastMentioned DateTime    @default(now())
+  category      String      // personal, work, preferences, relationships
+  metadata      Json?       // Additional context
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+  
+  @@index([userId, category])
+  @@index([userId, lastMentioned])
+}

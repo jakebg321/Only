@@ -1,11 +1,16 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Heart, MessageCircle, Camera } from "lucide-react";
+import { Heart, MessageCircle, Camera, Lock, Eye } from "lucide-react";
+import LoginPromptModal from "@/components/LoginPromptModal";
+import { useAuth } from "@/hooks/useAuth";
 
 export default function Home() {
+  const [showLoginModal, setShowLoginModal] = useState(false);
+  const { isAuthenticated, isLoading: authLoading } = useAuth();
   // Gallery images from public/Remy folder
   const galleryImages = [
     "/Remy/2025-08-08_17-13-44_4613.png",
@@ -239,25 +244,52 @@ export default function Home() {
             <h2 className="text-3xl font-bold mb-6 text-center bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
               My Latest Content 🔥
             </h2>
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-              {galleryImages.slice(0, 8).map((image, index) => (
-                <div key={index} className="relative group cursor-pointer">
-                  <div className="aspect-square rounded-lg overflow-hidden bg-gray-800">
-                    <img 
-                      src={image} 
-                      alt={`Gallery ${index + 1}`}
-                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end justify-center pb-4">
-                      <Link href="/gallery">
-                        <Button size="sm" className="bg-pink-600 hover:bg-pink-700">
-                          View More
-                        </Button>
-                      </Link>
-                    </div>
+            <div className="relative">
+              {/* Lock overlay for non-authenticated users */}
+              {!isAuthenticated && (
+                <div className="absolute inset-0 z-10 flex items-center justify-center bg-black/60 backdrop-blur-xl rounded-lg">
+                  <div className="text-center space-y-4 p-8">
+                    <Lock className="w-16 h-16 text-purple-400 mx-auto" />
+                    <h3 className="text-2xl font-bold text-white">
+                      Members Only Content
+                    </h3>
+                    <p className="text-gray-300 max-w-sm">
+                      Sign in to preview my exclusive content
+                    </p>
+                    <Button
+                      onClick={() => setShowLoginModal(true)}
+                      size="lg"
+                      className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
+                    >
+                      <Eye className="w-5 h-5 mr-2" />
+                      Unlock Preview
+                    </Button>
                   </div>
                 </div>
-              ))}
+              )}
+              
+              {/* Gallery grid - blurred if not authenticated */}
+              <div className={`grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 ${!isAuthenticated ? 'blur-2xl select-none pointer-events-none' : ''}`}>
+                {galleryImages.slice(0, 8).map((image, index) => (
+                  <div key={index} className="relative group cursor-pointer">
+                    <div className="aspect-square rounded-lg overflow-hidden bg-gray-800">
+                      <img 
+                        src={image} 
+                        alt={`Gallery ${index + 1}`}
+                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                        draggable={false}
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end justify-center pb-4">
+                        <Link href="/gallery">
+                          <Button size="sm" className="bg-pink-600 hover:bg-pink-700">
+                            View More
+                          </Button>
+                        </Link>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
             <div className="text-center mt-8">
               <Link href="/gallery">
@@ -286,6 +318,13 @@ export default function Home() {
           </Card>
         </div>
       </section>
+      
+      {/* Login Modal */}
+      <LoginPromptModal
+        isOpen={showLoginModal}
+        onClose={() => setShowLoginModal(false)}
+        message="Sign in to view exclusive content"
+      />
     </div>
   );
 }
