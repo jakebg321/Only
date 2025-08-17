@@ -35,7 +35,7 @@ export async function POST() {
   }
 }
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   // Support GET method for simple logout links
-  return POST(request);
+  return POST();
 }
