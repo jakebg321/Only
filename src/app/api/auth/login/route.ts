@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
-import { comparePassword, generateToken, generateRefreshToken, sanitizeUser } from '@/lib/auth';
+import { comparePassword, generateToken, generateRefreshToken } from '@/lib/auth';
 
 const prisma = new PrismaClient();
 

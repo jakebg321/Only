@@ -78,8 +78,8 @@ export async function POST(request: NextRequest) {
                     userPayload.email.split('@')[0];
 
     // Get creator personality (assuming Remy for now)
-    const creatorPersonality = subscriberInfo?.subscriptions[0]?.creator?.personality || {
-      displayName: 'Remy',
+    const creator = subscriberInfo?.subscriptions[0]?.creator;
+    const creatorPersonality = creator?.personality || {
       tone: 'FLIRTY',
       interests: ['fitness', 'fashion', 'photography', 'lingerie', 'dancing'],
       greetingMessage: 'Hey babe! 😘',
@@ -87,8 +87,10 @@ export async function POST(request: NextRequest) {
       flirtLevel: 5,
       explicitLevel: 2,
       petNames: ['babe', 'sexy', 'baby', 'love'],
-      fantasyFocus: ['teasing', 'roleplay', 'sensual chat']
+      fantasyFocus: ['teasing', 'roleplay', 'sensual chat'],
+      boundaries: ['no personal meetups', 'no illegal content']
     };
+    const creatorDisplayName = creator?.displayName || 'Remy';
 
     // Initialize Grok client
     const grokApiKey = process.env.GROK_API_KEY;
@@ -103,7 +105,7 @@ export async function POST(request: NextRequest) {
 
     // Build personality config with user context
     const personalityConfig = {
-      displayName: creatorPersonality.displayName || 'Remy',
+      displayName: creatorDisplayName,
       tone: creatorPersonality.tone || 'FLIRTY',
       personalityTraits: ['sexy', 'confident', 'playful', 'seductive'],
       interests: creatorPersonality.interests || [],
@@ -158,7 +160,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       message: response,
       personality: {
-        name: creatorPersonality.displayName,
+        name: creatorDisplayName,
         tone: creatorPersonality.tone
       },
       timestamp: new Date().toISOString()

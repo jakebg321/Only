@@ -1,6 +1,5 @@
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
-import { User } from '@prisma/client';
 
 // Get JWT secret from environment variable
 const JWT_SECRET = process.env.JWT_SECRET || 'your-super-secret-jwt-key-change-this-in-production';
@@ -81,6 +80,7 @@ export function extractTokenFromHeader(authHeader: string | null): string | null
  * Sanitize user object to remove sensitive data
  */
 export function sanitizeUser(user: any) {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { passwordHash, ...sanitized } = user;
   return sanitized;
 }
