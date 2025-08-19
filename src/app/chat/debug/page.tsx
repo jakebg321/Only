@@ -5,9 +5,10 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Send, RefreshCw, Download, Activity, Brain, Target, TrendingUp, AlertCircle } from "lucide-react";
-import { initProfile, getNextProbe, analyzeResponse, trackBehavior, getProfile, getStrategy } from "@/lib/database-profiler";
+import { initProfile, getNextProbe, analyzeResponse, trackBehavior, getProfile, getStrategy } from "@/lib/client-profiler";
 import { trackUserEvent, userAnalytics } from "@/lib/user-analytics";
 import DebugPanel from "@/components/DebugPanel";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 
 interface Message {
   id: string;
@@ -17,7 +18,7 @@ interface Message {
   probeId?: string;
 }
 
-export default function DebugChat() {
+function DebugChatComponent() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -35,59 +36,76 @@ export default function DebugChat() {
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const updateInterval = useRef<NodeJS.Timeout | null>(null);
+  const updateDebugDataRef = useRef<(() => Promise<void>) | undefined>(undefined);
 
   const updateDebugData = useCallback(async () => {
-    // Get latest profile
-    const profile = await getProfile(userId);
-    if (profile) {
-      setCurrentProfile(profile);
+    try {
+      // Get latest profile
+      const profile = await getProfile(userId);
+      if (profile) {
+        setCurrentProfile(profile);
+      }
+      
+      // Get strategy
+      const strategy = await getStrategy(userId);
+      if (strategy) {
+        setCurrentProfile((prev: any) => ({
+          ...prev,
+          strategy
+        }));
+      }
+      
+      // Update probe queue
+      const messageCount = messages.filter(m => m.role === 'user').length;
+      const nextProbe = await getNextProbe(userId, messageCount);
+      if (nextProbe) {
+        setProbeQueue([nextProbe]);
+      }
+    } catch (error) {
+      console.error('Error updating debug data:', error);
     }
-    
-    // Get strategy
-    const strategy = await getStrategy(userId);
-    if (strategy) {
-      setCurrentProfile((prev: any) => ({
-        ...prev,
-        strategy
-      }));
-    }
-    
-    // Update probe queue
-    const messageCount = messages.filter(m => m.role === 'user').length;
-    const nextProbe = await getNextProbe(userId, messageCount);
-    if (nextProbe) {
-      setProbeQueue([nextProbe]);
-    }
-  }, [userId, messages]);
+  }, [userId, messages.length]); // Only depend on message count, not full messages array
+  
+  // Store the function in a ref for stable reference
+  updateDebugDataRef.current = updateDebugData;
 
   useEffect(() => {
-    // Initialize profile
+    // Initialize profile - only run once per userId
     const initializeProfile = async () => {
-      const profile = await initProfile(userId);
-      setCurrentProfile(profile);
+      try {
+        const profile = await initProfile(userId);
+        setCurrentProfile(profile);
+      } catch (error) {
+        console.error('Failed to initialize profile:', error);
+      }
     };
     
     initializeProfile();
     
-    // Add welcome message
+    // Add welcome message - only once
     setMessages([{
       id: '1',
       role: 'assistant',
       content: `Hey sexy 😘 I'm Remy. This is debug mode - you can see everything happening in real-time on the right. What should I call you?`,
       timestamp: new Date()
     }]);
-    
-    // Start real-time updates
+  }, [userId]); // Only depend on userId
+
+  // Separate useEffect for real-time updates
+  useEffect(() => {
     updateInterval.current = setInterval(() => {
-      updateDebugData();
-    }, 2000); // Update every 2 seconds (slower for database)
+      // Use ref to avoid dependency on updateDebugData
+      if (updateDebugDataRef.current) {
+        updateDebugDataRef.current();
+      }
+    }, 5000); // Update every 5 seconds to prevent server overload
     
     return () => {
       if (updateInterval.current) {
         clearInterval(updateInterval.current);
       }
     };
-  }, [userId, updateDebugData]);
+  }, [userId]); // Only depend on userId
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -431,5 +449,13 @@ export default function DebugChat() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function DebugChat() {
+  return (
+    <ErrorBoundary>
+      <DebugChatComponent />
+    </ErrorBoundary>
   );
 }

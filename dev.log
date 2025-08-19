@@ -1,0 +1,216 @@
+
+> ai-content-platform@0.1.0 dev
+> next dev
+
+   ▲ Next.js 15.4.5
+   - Local:        http://localhost:3000
+   - Network:      http://10.255.255.254:3000
+   - Environments: .env.local, .env
+
+ ✓ Starting...
+ ✓ Ready in 23.1s
+ ✓ Compiled /middleware in 270ms (108 modules)
+ ○ Compiling /api/profiling/init ...
+ ✓ Compiled /api/profiling/init in 1396ms (286 modules)
+Error initializing profile: Error [PrismaClientValidationError]: 
+Invalid `prisma.user.create()` invocation:
+
+{
+  data: {
+    id: "debug_user_12345",
+    email: "debug_user_12345@debug.local",
+    username: "debug_user_12345",
+    passwordHash: "debug_user_no_auth",
+    name: "Debug User 12345",
+    createdAt: new Date("2025-08-19T15:39:50.722Z"),
+    updatedAt: new Date("2025-08-19T15:39:50.722Z"),
++   role: UserRole
+  }
+}
+
+Argument `role` is missing.
+    at async DatabaseProfiler.initializeProfile (src/lib/database-profiler.ts:139:10)
+    at async POST (src/app/api/profiling/init/route.ts:16:20)
+  137 |         if (!user) {
+  138 |           // Create debug user
+> 139 |           await prisma.user.create({
+      |          ^
+  140 |             data: {
+  141 |               id: userId,
+  142 |               email: `${userId}@debug.local`, {
+  clientVersion: '6.13.0'
+}
+Profile initialization error: Error [PrismaClientValidationError]: 
+Invalid `prisma.user.create()` invocation:
+
+{
+  data: {
+    id: "debug_user_12345",
+    email: "debug_user_12345@debug.local",
+    username: "debug_user_12345",
+    passwordHash: "debug_user_no_auth",
+    name: "Debug User 12345",
+    createdAt: new Date("2025-08-19T15:39:50.722Z"),
+    updatedAt: new Date("2025-08-19T15:39:50.722Z"),
++   role: UserRole
+  }
+}
+
+Argument `role` is missing.
+    at async DatabaseProfiler.initializeProfile (src/lib/database-profiler.ts:139:10)
+    at async POST (src/app/api/profiling/init/route.ts:16:20)
+  137 |         if (!user) {
+  138 |           // Create debug user
+> 139 |           await prisma.user.create({
+      |          ^
+  140 |             data: {
+  141 |               id: userId,
+  142 |               email: `${userId}@debug.local`, {
+  clientVersion: '6.13.0'
+}
+Error stack: PrismaClientValidationError: 
+Invalid `prisma.user.create()` invocation:
+
+{
+  data: {
+    id: "debug_user_12345",
+    email: "debug_user_12345@debug.local",
+    username: "debug_user_12345",
+    passwordHash: "debug_user_no_auth",
+    name: "Debug User 12345",
+    createdAt: new Date("2025-08-19T15:39:50.722Z"),
+    updatedAt: new Date("2025-08-19T15:39:50.722Z"),
++   role: UserRole
+  }
+}
+
+Argument `role` is missing.
+    at _n (/mnt/c/Users/pc/vscode/Only/ai-content-platform/node_modules/@prisma/client/runtime/library.js:29:1363)
+    at ri.handleRequestError (/mnt/c/Users/pc/vscode/Only/ai-content-platform/node_modules/@prisma/client/runtime/library.js:121:7102)
+    at ri.handleAndLogRequestError (/mnt/c/Users/pc/vscode/Only/ai-content-platform/node_modules/@prisma/client/runtime/library.js:121:6784)
+    at ri.request (/mnt/c/Users/pc/vscode/Only/ai-content-platform/node_modules/@prisma/client/runtime/library.js:121:6491)
+    at async l (/mnt/c/Users/pc/vscode/Only/ai-content-platform/node_modules/@prisma/client/runtime/library.js:130:9812)
+    at async DatabaseProfiler.initializeProfile (webpack-internal:///(rsc)/./src/lib/database-profiler.ts:40:21)
+    at async POST (webpack-internal:///(rsc)/./src/app/api/profiling/init/route.ts:20:25)
+    at async AppRouteRouteModule.do (/mnt/c/Users/pc/vscode/Only/ai-content-platform/node_modules/next/dist/compiled/next-server/app-route.runtime.dev.js:5:38782)
+    at async AppRouteRouteModule.handle (/mnt/c/Users/pc/vscode/Only/ai-content-platform/node_modules/next/dist/compiled/next-server/app-route.runtime.dev.js:5:45984)
+    at async responseGenerator (webpack-internal:///(rsc)/./node_modules/next/dist/build/webpack/loaders/next-app-loader/index.js?name=app%2Fapi%2Fprofiling%2Finit%2Froute&page=%2Fapi%2Fprofiling%2Finit%2Froute&appPaths=&pagePath=private-next-app-dir%2Fapi%2Fprofiling%2Finit%2Froute.ts&appDir=%2Fmnt%2Fc%2FUsers%2Fpc%2Fvscode%2FOnly%2Fai-content-platform%2Fsrc%2Fapp&pageExtensions=tsx&pageExtensions=ts&pageExtensions=jsx&pageExtensions=js&rootDir=%2Fmnt%2Fc%2FUsers%2Fpc%2Fvscode%2FOnly%2Fai-content-platform&isDev=true&tsconfigPath=tsconfig.json&basePath=&assetPrefix=&nextConfigOutput=&preferredRegion=&middlewareConfig=e30%3D&isGlobalNotFoundEnabled=!:203:38)
+    at async AppRouteRouteModule.handleResponse (/mnt/c/Users/pc/vscode/Only/ai-content-platform/node_modules/next/dist/compiled/next-server/app-route.runtime.dev.js:1:183692)
+    at async handleResponse (webpack-internal:///(rsc)/./node_modules/next/dist/build/webpack/loaders/next-app-loader/index.js?name=app%2Fapi%2Fprofiling%2Finit%2Froute&page=%2Fapi%2Fprofiling%2Finit%2Froute&appPaths=&pagePath=private-next-app-dir%2Fapi%2Fprofiling%2Finit%2Froute.ts&appDir=%2Fmnt%2Fc%2FUsers%2Fpc%2Fvscode%2FOnly%2Fai-content-platform%2Fsrc%2Fapp&pageExtensions=tsx&pageExtensions=ts&pageExtensions=jsx&pageExtensions=js&rootDir=%2Fmnt%2Fc%2FUsers%2Fpc%2Fvscode%2FOnly%2Fai-content-platform&isDev=true&tsconfigPath=tsconfig.json&basePath=&assetPrefix=&nextConfigOutput=&preferredRegion=&middlewareConfig=e30%3D&isGlobalNotFoundEnabled=!:265:32)
+    at async handler (webpack-internal:///(rsc)/./node_modules/next/dist/build/webpack/loaders/next-app-loader/index.js?name=app%2Fapi%2Fprofiling%2Finit%2Froute&page=%2Fapi%2Fprofiling%2Finit%2Froute&appPaths=&pagePath=private-next-app-dir%2Fapi%2Fprofiling%2Finit%2Froute.ts&appDir=%2Fmnt%2Fc%2FUsers%2Fpc%2Fvscode%2FOnly%2Fai-content-platform%2Fsrc%2Fapp&pageExtensions=tsx&pageExtensions=ts&pageExtensions=jsx&pageExtensions=js&rootDir=%2Fmnt%2Fc%2FUsers%2Fpc%2Fvscode%2FOnly%2Fai-content-platform&isDev=true&tsconfigPath=tsconfig.json&basePath=&assetPrefix=&nextConfigOutput=&preferredRegion=&middlewareConfig=e30%3D&isGlobalNotFoundEnabled=!:317:13)
+    at async doRender (/mnt/c/Users/pc/vscode/Only/ai-content-platform/node_modules/next/dist/server/base-server.js:1587:34)
+    at async DevServer.renderToResponseWithComponentsImpl (/mnt/c/Users/pc/vscode/Only/ai-content-platform/node_modules/next/dist/server/base-server.js:1929:13)
+    at async DevServer.renderPageComponent (/mnt/c/Users/pc/vscode/Only/ai-content-platform/node_modules/next/dist/server/base-server.js:2395:24)
+    at async DevServer.renderToResponseImpl (/mnt/c/Users/pc/vscode/Only/ai-content-platform/node_modules/next/dist/server/base-server.js:2435:32)
+    at async DevServer.pipeImpl (/mnt/c/Users/pc/vscode/Only/ai-content-platform/node_modules/next/dist/server/base-server.js:1035:25)
+    at async NextNodeServer.handleCatchallRenderRequest (/mnt/c/Users/pc/vscode/Only/ai-content-platform/node_modules/next/dist/server/next-server.js:393:17)
+    at async DevServer.handleRequestImpl (/mnt/c/Users/pc/vscode/Only/ai-content-platform/node_modules/next/dist/server/base-server.js:925:17)
+    at async /mnt/c/Users/pc/vscode/Only/ai-content-platform/node_modules/next/dist/server/dev/next-dev-server.js:398:20
+    at async Span.traceAsyncFn (/mnt/c/Users/pc/vscode/Only/ai-content-platform/node_modules/next/dist/trace/trace.js:157:20)
+    at async DevServer.handleRequest (/mnt/c/Users/pc/vscode/Only/ai-content-platform/node_modules/next/dist/server/dev/next-dev-server.js:394:24)
+    at async invokeRender (/mnt/c/Users/pc/vscode/Only/ai-content-platform/node_modules/next/dist/server/lib/router-server.js:239:21)
+    at async handleRequest (/mnt/c/Users/pc/vscode/Only/ai-content-platform/node_modules/next/dist/server/lib/router-server.js:436:24)
+    at async requestHandlerImpl (/mnt/c/Users/pc/vscode/Only/ai-content-platform/node_modules/next/dist/server/lib/router-server.js:464:13)
+    at async Server.requestListener (/mnt/c/Users/pc/vscode/Only/ai-content-platform/node_modules/next/dist/server/lib/start-server.js:218:13)
+ POST /api/profiling/init 500 in 3819ms
+Error initializing profile: Error [PrismaClientValidationError]: 
+Invalid `prisma.user.create()` invocation:
+
+{
+  data: {
+    id: "debug_user_test1",
+    email: "debug_user_test1@debug.local",
+    username: "debug_user_test1",
+    passwordHash: "debug_user_no_auth",
+    name: "Debug User test1",
+    createdAt: new Date("2025-08-19T15:41:48.218Z"),
+    updatedAt: new Date("2025-08-19T15:41:48.218Z"),
++   role: UserRole
+  }
+}
+
+Argument `role` is missing.
+    at async DatabaseProfiler.initializeProfile (src/lib/database-profiler.ts:139:10)
+    at async POST (src/app/api/profiling/init/route.ts:16:20)
+  137 |         if (!user) {
+  138 |           // Create debug user
+> 139 |           await prisma.user.create({
+      |          ^
+  140 |             data: {
+  141 |               id: userId,
+  142 |               email: `${userId}@debug.local`, {
+  clientVersion: '6.13.0'
+}
+Profile initialization error: Error [PrismaClientValidationError]: 
+Invalid `prisma.user.create()` invocation:
+
+{
+  data: {
+    id: "debug_user_test1",
+    email: "debug_user_test1@debug.local",
+    username: "debug_user_test1",
+    passwordHash: "debug_user_no_auth",
+    name: "Debug User test1",
+    createdAt: new Date("2025-08-19T15:41:48.218Z"),
+    updatedAt: new Date("2025-08-19T15:41:48.218Z"),
++   role: UserRole
+  }
+}
+
+Argument `role` is missing.
+    at async DatabaseProfiler.initializeProfile (src/lib/database-profiler.ts:139:10)
+    at async POST (src/app/api/profiling/init/route.ts:16:20)
+  137 |         if (!user) {
+  138 |           // Create debug user
+> 139 |           await prisma.user.create({
+      |          ^
+  140 |             data: {
+  141 |               id: userId,
+  142 |               email: `${userId}@debug.local`, {
+  clientVersion: '6.13.0'
+}
+Error stack: PrismaClientValidationError: 
+Invalid `prisma.user.create()` invocation:
+
+{
+  data: {
+    id: "debug_user_test1",
+    email: "debug_user_test1@debug.local",
+    username: "debug_user_test1",
+    passwordHash: "debug_user_no_auth",
+    name: "Debug User test1",
+    createdAt: new Date("2025-08-19T15:41:48.218Z"),
+    updatedAt: new Date("2025-08-19T15:41:48.218Z"),
++   role: UserRole
+  }
+}
+
+Argument `role` is missing.
+    at _n (/mnt/c/Users/pc/vscode/Only/ai-content-platform/node_modules/@prisma/client/runtime/library.js:29:1363)
+    at ri.handleRequestError (/mnt/c/Users/pc/vscode/Only/ai-content-platform/node_modules/@prisma/client/runtime/library.js:121:7102)
+    at ri.handleAndLogRequestError (/mnt/c/Users/pc/vscode/Only/ai-content-platform/node_modules/@prisma/client/runtime/library.js:121:6784)
+    at ri.request (/mnt/c/Users/pc/vscode/Only/ai-content-platform/node_modules/@prisma/client/runtime/library.js:121:6491)
+    at async l (/mnt/c/Users/pc/vscode/Only/ai-content-platform/node_modules/@prisma/client/runtime/library.js:130:9812)
+    at async DatabaseProfiler.initializeProfile (webpack-internal:///(rsc)/./src/lib/database-profiler.ts:40:21)
+    at async POST (webpack-internal:///(rsc)/./src/app/api/profiling/init/route.ts:20:25)
+    at async AppRouteRouteModule.do (/mnt/c/Users/pc/vscode/Only/ai-content-platform/node_modules/next/dist/compiled/next-server/app-route.runtime.dev.js:5:38782)
+    at async AppRouteRouteModule.handle (/mnt/c/Users/pc/vscode/Only/ai-content-platform/node_modules/next/dist/compiled/next-server/app-route.runtime.dev.js:5:45984)
+    at async responseGenerator (webpack-internal:///(rsc)/./node_modules/next/dist/build/webpack/loaders/next-app-loader/index.js?name=app%2Fapi%2Fprofiling%2Finit%2Froute&page=%2Fapi%2Fprofiling%2Finit%2Froute&appPaths=&pagePath=private-next-app-dir%2Fapi%2Fprofiling%2Finit%2Froute.ts&appDir=%2Fmnt%2Fc%2FUsers%2Fpc%2Fvscode%2FOnly%2Fai-content-platform%2Fsrc%2Fapp&pageExtensions=tsx&pageExtensions=ts&pageExtensions=jsx&pageExtensions=js&rootDir=%2Fmnt%2Fc%2FUsers%2Fpc%2Fvscode%2FOnly%2Fai-content-platform&isDev=true&tsconfigPath=tsconfig.json&basePath=&assetPrefix=&nextConfigOutput=&preferredRegion=&middlewareConfig=e30%3D&isGlobalNotFoundEnabled=!:203:38)
+    at async AppRouteRouteModule.handleResponse (/mnt/c/Users/pc/vscode/Only/ai-content-platform/node_modules/next/dist/compiled/next-server/app-route.runtime.dev.js:1:183692)
+    at async handleResponse (webpack-internal:///(rsc)/./node_modules/next/dist/build/webpack/loaders/next-app-loader/index.js?name=app%2Fapi%2Fprofiling%2Finit%2Froute&page=%2Fapi%2Fprofiling%2Finit%2Froute&appPaths=&pagePath=private-next-app-dir%2Fapi%2Fprofiling%2Finit%2Froute.ts&appDir=%2Fmnt%2Fc%2FUsers%2Fpc%2Fvscode%2FOnly%2Fai-content-platform%2Fsrc%2Fapp&pageExtensions=tsx&pageExtensions=ts&pageExtensions=jsx&pageExtensions=js&rootDir=%2Fmnt%2Fc%2FUsers%2Fpc%2Fvscode%2FOnly%2Fai-content-platform&isDev=true&tsconfigPath=tsconfig.json&basePath=&assetPrefix=&nextConfigOutput=&preferredRegion=&middlewareConfig=e30%3D&isGlobalNotFoundEnabled=!:265:32)
+    at async handler (webpack-internal:///(rsc)/./node_modules/next/dist/build/webpack/loaders/next-app-loader/index.js?name=app%2Fapi%2Fprofiling%2Finit%2Froute&page=%2Fapi%2Fprofiling%2Finit%2Froute&appPaths=&pagePath=private-next-app-dir%2Fapi%2Fprofiling%2Finit%2Froute.ts&appDir=%2Fmnt%2Fc%2FUsers%2Fpc%2Fvscode%2FOnly%2Fai-content-platform%2Fsrc%2Fapp&pageExtensions=tsx&pageExtensions=ts&pageExtensions=jsx&pageExtensions=js&rootDir=%2Fmnt%2Fc%2FUsers%2Fpc%2Fvscode%2FOnly%2Fai-content-platform&isDev=true&tsconfigPath=tsconfig.json&basePath=&assetPrefix=&nextConfigOutput=&preferredRegion=&middlewareConfig=e30%3D&isGlobalNotFoundEnabled=!:317:13)
+    at async doRender (/mnt/c/Users/pc/vscode/Only/ai-content-platform/node_modules/next/dist/server/base-server.js:1587:34)
+    at async DevServer.renderToResponseWithComponentsImpl (/mnt/c/Users/pc/vscode/Only/ai-content-platform/node_modules/next/dist/server/base-server.js:1929:13)
+    at async DevServer.renderPageComponent (/mnt/c/Users/pc/vscode/Only/ai-content-platform/node_modules/next/dist/server/base-server.js:2395:24)
+    at async DevServer.renderToResponseImpl (/mnt/c/Users/pc/vscode/Only/ai-content-platform/node_modules/next/dist/server/base-server.js:2435:32)
+    at async DevServer.pipeImpl (/mnt/c/Users/pc/vscode/Only/ai-content-platform/node_modules/next/dist/server/base-server.js:1035:25)
+    at async NextNodeServer.handleCatchallRenderRequest (/mnt/c/Users/pc/vscode/Only/ai-content-platform/node_modules/next/dist/server/next-server.js:393:17)
+    at async DevServer.handleRequestImpl (/mnt/c/Users/pc/vscode/Only/ai-content-platform/node_modules/next/dist/server/base-server.js:925:17)
+    at async /mnt/c/Users/pc/vscode/Only/ai-content-platform/node_modules/next/dist/server/dev/next-dev-server.js:398:20
+    at async Span.traceAsyncFn (/mnt/c/Users/pc/vscode/Only/ai-content-platform/node_modules/next/dist/trace/trace.js:157:20)
+    at async DevServer.handleRequest (/mnt/c/Users/pc/vscode/Only/ai-content-platform/node_modules/next/dist/server/dev/next-dev-server.js:394:24)
+    at async invokeRender (/mnt/c/Users/pc/vscode/Only/ai-content-platform/node_modules/next/dist/server/lib/router-server.js:239:21)
+    at async handleRequest (/mnt/c/Users/pc/vscode/Only/ai-content-platform/node_modules/next/dist/server/lib/router-server.js:436:24)
+    at async requestHandlerImpl (/mnt/c/Users/pc/vscode/Only/ai-content-platform/node_modules/next/dist/server/lib/router-server.js:464:13)
+    at async Server.requestListener (/mnt/c/Users/pc/vscode/Only/ai-content-platform/node_modules/next/dist/server/lib/start-server.js:218:13)
+ POST /api/profiling/init 500 in 554ms

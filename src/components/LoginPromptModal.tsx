@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -16,6 +17,7 @@ interface LoginPromptModalProps {
 }
 
 export default function LoginPromptModal({ isOpen, onClose, message }: LoginPromptModalProps) {
+  const { login } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -30,26 +32,10 @@ export default function LoginPromptModal({ isOpen, onClose, message }: LoginProm
     setIsLoading(true);
 
     try {
-      // Use test login route for test accounts
-      const isTestAccount = email === "test@example.com" || email === "creator@example.com";
-      const loginEndpoint = isTestAccount ? "/api/auth/test-login" : "/api/auth/login";
+      await login(email, password);
       
-      const response = await fetch(loginEndpoint, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || "Login failed");
-      }
-
-      // Store user data
-      localStorage.setItem("user", JSON.stringify(data.user));
-      
-      // Refresh the page to show authenticated content
+      // Close modal and refresh to show authenticated content
+      if (onClose) onClose();
       window.location.reload();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong");
@@ -60,7 +46,7 @@ export default function LoginPromptModal({ isOpen, onClose, message }: LoginProm
 
   const useTestCredentials = () => {
     setEmail("test@example.com");
-    setPassword("test123");
+    setPassword("testpass123");
     setShowTestCredentials(false);
   };
 
@@ -95,10 +81,10 @@ export default function LoginPromptModal({ isOpen, onClose, message }: LoginProm
             <Alert className="mb-4 bg-blue-900/20 border-blue-500/30">
               <Info className="h-4 w-4 text-blue-400" />
               <AlertDescription className="text-blue-300">
-                <div className="font-semibold mb-1">Test Account (No Database Required)</div>
+                <div className="font-semibold mb-1">Database Test Account</div>
                 <div className="text-sm space-y-1">
                   <div>Email: test@example.com</div>
-                  <div>Password: test123</div>
+                  <div>Password: testpass123</div>
                   <Button
                     size="sm"
                     variant="outline"

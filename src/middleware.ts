@@ -1,16 +1,12 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
-import { verifyToken } from '@/lib/auth';
 
 // Define protected routes
 const protectedRoutes = [
   '/chat',
-  '/gallery',
+  '/gallery', 
   '/dashboard',
   '/creator',
-  '/api/chat',
-  '/api/images/generate',
-  '/api/user',
 ];
 
 // Define public routes (no auth required)
@@ -20,6 +16,7 @@ const publicRoutes = [
   '/auth/signup',
   '/api/auth/login',
   '/api/auth/signup',
+  '/api/auth/verify',
 ];
 
 export function middleware(request: NextRequest) {
@@ -29,44 +26,19 @@ export function middleware(request: NextRequest) {
   const isProtectedRoute = protectedRoutes.some(route => path.startsWith(route));
   const isPublicRoute = publicRoutes.some(route => path === route);
   
-  // Allow public routes
-  if (isPublicRoute) {
+  // Allow public routes and API routes (they handle auth internally)
+  if (isPublicRoute || path.startsWith('/api/')) {
     return NextResponse.next();
   }
   
-  // Check authentication for protected routes
+  // For protected routes, just check if auth token exists
+  // Let individual components verify the token with /api/auth/verify
   if (isProtectedRoute) {
     const token = request.cookies.get('authToken')?.value;
     
     if (!token) {
       // Redirect to login if no token
       return NextResponse.redirect(new URL('/auth/login', request.url));
-    }
-    
-    // Verify token
-    const payload = verifyToken(token);
-    
-    if (!payload) {
-      // Invalid token, redirect to login
-      const response = NextResponse.redirect(new URL('/auth/login', request.url));
-      // Clear invalid cookies
-      response.cookies.delete('authToken');
-      response.cookies.delete('refreshToken');
-      return response;
-    }
-    
-    // Add user info to headers for API routes
-    if (path.startsWith('/api/')) {
-      const requestHeaders = new Headers(request.headers);
-      requestHeaders.set('x-user-id', payload.userId);
-      requestHeaders.set('x-user-email', payload.email);
-      requestHeaders.set('x-user-role', payload.role);
-      
-      return NextResponse.next({
-        request: {
-          headers: requestHeaders,
-        },
-      });
     }
   }
   

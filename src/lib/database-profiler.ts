@@ -3,9 +3,7 @@
  * Stores user profiles and behavioral data in PostgreSQL
  */
 
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import prisma from '@/lib/prisma-singleton';
 
 export type VulnerabilityType = 'LONELY' | 'NEGLECTED' | 'INADEQUATE' | 'VULNERABLE' | 'UNKNOWN';
 export type EgoType = 'HERO' | 'ALPHA' | 'PROVIDER' | 'EXPLORER' | 'UNKNOWN';
@@ -127,6 +125,27 @@ class DatabaseProfiler {
 
       if (existing) {
         return this.mapDbToProfile(existing);
+      }
+
+      // For debug users, create user first if needed
+      if (userId.startsWith('debug_user_')) {
+        // Check if user exists
+        const user = await prisma.user.findUnique({
+          where: { id: userId }
+        });
+        
+        if (!user) {
+          // Create debug user
+          await prisma.user.create({
+            data: {
+              id: userId,
+              email: `${userId}@debug.local`,
+              passwordHash: 'debug_user_no_auth', // Won't be used for actual auth
+              role: 'SUBSCRIBER', // Default role for debug users
+              isActive: true
+            }
+          });
+        }
       }
 
       // Create new profile

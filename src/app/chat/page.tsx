@@ -1,15 +1,17 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Send, Sparkles, User, Settings, Heart, Shield, Zap, Check, CheckCheck } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { initProfile, getNextProbe, analyzeResponse, trackBehavior, getStrategy } from "@/lib/database-profiler";
+import { initProfile, getNextProbe, analyzeResponse, trackBehavior, getStrategy } from "@/lib/client-profiler";
 import { trackUserEvent } from "@/lib/user-analytics";
 import ContentDropOffer from "@/components/ContentDropOffer";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 
 type ChatMode = 'welcome' | 'personalize' | 'chat';
 
@@ -95,7 +97,8 @@ const PRESET_PERSONALITIES = {
   }
 };
 
-export default function Chat() {
+function ChatComponent() {
+  const { user, isAuthenticated, isLoading: authLoading } = useAuth();
   const [mode, setMode] = useState<ChatMode>('welcome');
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
@@ -108,7 +111,7 @@ export default function Chat() {
   const [imageRequestType, setImageRequestType] = useState<'image' | 'video'>('image');
   
   // Preference tracking state
-  const [userId] = useState(`user_${Date.now()}`); // Generate unique user ID
+  const userId = user?.id || 'anonymous'; // Use authenticated user ID
   const [typingStartTime, setTypingStartTime] = useState<Date | null>(null);
   const [typingStops, setTypingStops] = useState(0);
   const [showContentOffer, setShowContentOffer] = useState(false);
@@ -116,16 +119,35 @@ export default function Chat() {
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  };
-
+  // All useEffect hooks MUST be declared before any conditional returns
   useEffect(() => {
-    scrollToBottom();
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
+    }
   }, [messages]);
 
   // Load custom personalities when component mounts
   useEffect(() => {
+    const loadCustomPersonalities = async () => {
+      try {
+        console.log('Loading custom personalities...');
+        const response = await fetch('/api/creator/personality');
+        const data = await response.json();
+        console.log('Custom personalities API response:', data);
+        
+        if (data.personalities) {
+          console.log('Setting custom personalities:', data.personalities);
+          setCustomPersonalities(data.personalities);
+        } else {
+          console.log('No personalities found in response');
+          setCustomPersonalities([]);
+        }
+      } catch (error) {
+        console.error('Failed to load custom personalities:', error);
+        setCustomPersonalities([]);
+      }
+    };
+
     loadCustomPersonalities();
     
     // Listen for personality updates from the setup page
@@ -156,25 +178,23 @@ export default function Chat() {
     };
   }, []);
 
-  const loadCustomPersonalities = async () => {
-    try {
-      console.log('Loading custom personalities...');
-      const response = await fetch('/api/creator/personality');
-      const data = await response.json();
-      console.log('Custom personalities API response:', data);
-      
-      if (data.personalities) {
-        console.log('Setting custom personalities:', data.personalities);
-        setCustomPersonalities(data.personalities);
-      } else {
-        console.log('No personalities found in response');
-        setCustomPersonalities([]);
-      }
-    } catch (error) {
-      console.error('Failed to load custom personalities:', error);
-      setCustomPersonalities([]);
-    }
-  };
+  // Show loading spinner while checking authentication
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center">
+        <div className="text-white">Loading...</div>
+      </div>
+    );
+  }
+
+  // Redirect handled by middleware, this is just a safety check
+  if (!isAuthenticated) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center">
+        <div className="text-white">Redirecting to login...</div>
+      </div>
+    );
+  }
 
   const pollForImageResult = async (requestId: number, messageId: string) => {
     const maxAttempts = 60; // Poll for up to 3 minutes
@@ -311,13 +331,13 @@ export default function Chat() {
     setAwaitingImageDescription(false);
   };
 
-  const startDemo = () => {
+  const startDemo = async () => {
     setPersonality(DEFAULT_PERSONALITY);
     setMode('chat');
     setShowSettings(true);
     
     // Initialize user profile
-    initProfile(userId);
+    await initProfile(userId);
     trackUserEvent(userId, 'message_sent', { sessionStart: true });
     
     // Add welcome message
@@ -400,7 +420,7 @@ export default function Chat() {
     // Track typing behavior if we were tracking
     if (typingStartTime) {
       const typingDuration = new Date().getTime() - typingStartTime.getTime();
-      trackBehavior(userId, {
+      await trackBehavior(userId, {
         responseTime: typingDuration,
         messageLength: input.length,
         typingStops: typingStops,
@@ -430,7 +450,7 @@ export default function Chat() {
     
     // If this was a response to a probe, analyze it
     if (currentProbeId) {
-      analyzeResponse(userId, currentProbeId, input);
+      await analyzeResponse(userId, currentProbeId, input);
       setCurrentProbeId(null);
     }
     
@@ -492,7 +512,7 @@ export default function Chat() {
       
       // Check if we should inject a preference probe
       const messageCount = messages.filter(m => m.role === 'user').length;
-      const probe = getNextProbe(userId, messageCount);
+      const probe = await getNextProbe(userId, messageCount);
       
       if (probe && Math.random() < 0.3) { // 30% chance to include probe
         // Naturally weave the probe into the response
@@ -515,7 +535,7 @@ export default function Chat() {
       ));
       
       // Check if we should show a content offer based on profile
-      const strategy = getStrategy(userId);
+      const strategy = await getStrategy(userId);
       if (strategy && strategy.conversionProbability > 0.6 && messageCount > 5 && Math.random() < 0.2) {
         // 20% chance to show offer if user is engaged
         setTimeout(() => {
@@ -999,5 +1019,13 @@ export default function Chat() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function Chat() {
+  return (
+    <ErrorBoundary>
+      <ChatComponent />
+    </ErrorBoundary>
   );
 }

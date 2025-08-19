@@ -1,7 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
+import { useAuth } from "@/hooks/useAuth";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -10,15 +12,24 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Heart, Mail, Lock, Loader2, Info } from "lucide-react";
 
 export default function LoginPage() {
+  const { login, isAuthenticated } = useAuth();
+  const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [showTestCredentials, setShowTestCredentials] = useState(true);
 
+  // Redirect if already authenticated
+  useEffect(() => {
+    if (isAuthenticated) {
+      router.push('/chat');
+    }
+  }, [isAuthenticated, router]);
+
   const useTestCredentials = () => {
     setEmail("test@example.com");
-    setPassword("test123");
+    setPassword("testpass123");
     setShowTestCredentials(false);
   };
 
@@ -28,32 +39,18 @@ export default function LoginPage() {
     setIsLoading(true);
 
     try {
-      // Use test login route for test accounts
-      const isTestAccount = email === "test@example.com" || email === "creator@example.com";
-      const loginEndpoint = isTestAccount ? "/api/auth/test-login" : "/api/auth/login";
+      const data = await login(email, password);
+      console.log("Login successful:", data);
       
-      const response = await fetch(loginEndpoint, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || "Login failed");
-      }
-
-      // Store user data in localStorage
-      localStorage.setItem("user", JSON.stringify(data.user));
-      
-      // Use window.location for consistent behavior with modal login
+      // useAuth will handle the authentication state
+      // Redirect will be handled by useEffect above
       if (data.user.role === "SUBSCRIBER") {
-        window.location.href = "/chat";
+        router.push("/chat");
       } else {
-        window.location.href = "/dashboard";
+        router.push("/dashboard");
       }
     } catch (err) {
+      console.error("Login error:", err);
       setError(err instanceof Error ? err.message : "Something went wrong");
     } finally {
       setIsLoading(false);
@@ -79,15 +76,15 @@ export default function LoginPage() {
               <Alert className="mb-4 bg-blue-900/20 border-blue-500/30">
                 <Info className="h-4 w-4 text-blue-400" />
                 <AlertDescription className="text-blue-300">
-                  <div className="font-semibold mb-1">Test Accounts (No Database Required)</div>
+                  <div className="font-semibold mb-1">Database Test Accounts</div>
                   <div className="text-sm space-y-2">
                     <div className="p-2 bg-black/30 rounded">
                       <div className="font-mono">test@example.com</div>
-                      <div className="text-xs text-gray-400">Password: test123</div>
+                      <div className="text-xs text-gray-400">Password: testpass123</div>
                     </div>
                     <div className="p-2 bg-black/30 rounded">
                       <div className="font-mono">creator@example.com</div>
-                      <div className="text-xs text-gray-400">Password: creator123</div>
+                      <div className="text-xs text-gray-400">Password: password123</div>
                     </div>
                     <Button
                       type="button"
