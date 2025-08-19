@@ -17,6 +17,8 @@ const publicRoutes = [
   '/api/auth/login',
   '/api/auth/signup',
   '/api/auth/verify',
+  '/chat/test-lab',
+  '/chat/debug',
 ];
 
 export function middleware(request: NextRequest) {
@@ -26,8 +28,12 @@ export function middleware(request: NextRequest) {
   const isProtectedRoute = protectedRoutes.some(route => path.startsWith(route));
   const isPublicRoute = publicRoutes.some(route => path === route);
   
+  // Debug logging
+  console.log(`[MIDDLEWARE] Path: ${path}, Protected: ${isProtectedRoute}, Public: ${isPublicRoute}`);
+  
   // Allow public routes and API routes (they handle auth internally)
   if (isPublicRoute || path.startsWith('/api/')) {
+    console.log(`[MIDDLEWARE] Allowing ${path}`);
     return NextResponse.next();
   }
   

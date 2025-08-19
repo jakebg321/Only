@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Send, RefreshCw, Download, Activity, Brain, Target, TrendingUp, AlertCircle } from "lucide-react";
-import { initProfile, getNextProbe, analyzeResponse, trackBehavior, getProfile, getStrategy } from "@/lib/client-profiler";
+// Removed old profiling imports - now using unified API only
 import { trackUserEvent, userAnalytics } from "@/lib/user-analytics";
 import DebugPanel from "@/components/DebugPanel";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
@@ -16,6 +16,7 @@ interface Message {
   content: string;
   timestamp: Date;
   probeId?: string;
+  undertone?: any; // Psychological analysis data
 }
 
 function DebugChatComponent() {
@@ -40,27 +41,9 @@ function DebugChatComponent() {
 
   const updateDebugData = useCallback(async () => {
     try {
-      // Get latest profile
-      const profile = await getProfile(userId);
-      if (profile) {
-        setCurrentProfile(profile);
-      }
-      
-      // Get strategy
-      const strategy = await getStrategy(userId);
-      if (strategy) {
-        setCurrentProfile((prev: any) => ({
-          ...prev,
-          strategy
-        }));
-      }
-      
-      // Update probe queue
-      const messageCount = messages.filter(m => m.role === 'user').length;
-      const nextProbe = await getNextProbe(userId, messageCount);
-      if (nextProbe) {
-        setProbeQueue([nextProbe]);
-      }
+      // Debug data now comes from unified API responses
+      // Profile and strategy updates happen automatically through unified chat
+      console.log('Debug data updated via unified API');
     } catch (error) {
       console.error('Error updating debug data:', error);
     }
@@ -70,17 +53,7 @@ function DebugChatComponent() {
   updateDebugDataRef.current = updateDebugData;
 
   useEffect(() => {
-    // Initialize profile - only run once per userId
-    const initializeProfile = async () => {
-      try {
-        const profile = await initProfile(userId);
-        setCurrentProfile(profile);
-      } catch (error) {
-        console.error('Failed to initialize profile:', error);
-      }
-    };
-    
-    initializeProfile();
+    // Profile initialization now handled by unified API
     
     // Add welcome message - only once
     setMessages([{
@@ -159,20 +132,12 @@ function DebugChatComponent() {
   const sendMessage = async () => {
     if (!input.trim() || isLoading) return;
 
-    // Calculate typing metrics
+    // Calculate typing metrics for unified API
     let typingDuration = 0;
     if (typingMetrics.startTime) {
       typingDuration = new Date().getTime() - typingMetrics.startTime.getTime();
       
-      // Track behavior
-      await trackBehavior(userId, {
-        responseTime: typingDuration,
-        messageLength: input.length,
-        typingStops: typingMetrics.stops,
-        timeOfDay: new Date().getHours()
-      });
-      
-      // Add to event stream
+      // Add to event stream for debugging
       const behaviorEvent = {
         type: 'behavior_tracked',
         timestamp: new Date(),
@@ -206,21 +171,7 @@ function DebugChatComponent() {
     setEvents(prev => [msgEvent, ...prev].slice(0, 50));
     trackUserEvent(userId, 'message_sent', { messageLength: input.length });
 
-    // Check if this was a probe response
-    const lastAssistantMsg = messages.filter(m => m.role === 'assistant').pop();
-    if (lastAssistantMsg?.probeId) {
-      await analyzeResponse(userId, lastAssistantMsg.probeId, input);
-      
-      const probeEvent = {
-        type: 'probe_response_analyzed',
-        timestamp: new Date(),
-        data: {
-          probeId: lastAssistantMsg.probeId,
-          response: input.substring(0, 50)
-        }
-      };
-      setEvents(prev => [probeEvent, ...prev].slice(0, 50));
-    }
+    // Probe analysis now handled by unified API
 
     const currentInput = input;
     setInput("");
@@ -228,61 +179,69 @@ function DebugChatComponent() {
     setIsLoading(true);
 
     try {
-      // Get AI response
-      const response = await fetch('/api/chat/test', {
+      // Use UNIFIED chat engine
+      const response = await fetch('/api/chat/unified', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          userId,
           message: currentInput,
-          conversationHistory: messages.slice(-6).map(msg => ({
+          conversationHistory: messages.map(msg => ({
+            id: msg.id,
             role: msg.role,
-            content: msg.content
+            content: msg.content,
+            timestamp: msg.timestamp,
+            probeId: msg.probeId
           })),
-          personality: {
-            name: "Remy",
-            tone: "FLIRTY",
-            enableEmojis: true,
-            flirtLevel: 4,
-            explicitLevel: 2,
-            responseLength: 'medium',
-            emojiFrequency: 'moderate'
-          }
+          debugMode: true, // Always true for debug chat
+          responseTime: typingDuration,
+          typingStops: typingMetrics.stops
         })
       });
 
       const data = await response.json();
-      let aiContent = data.message || "Connection issues... try again?";
       
-      // Check if we should inject a probe
-      const messageCount = messages.filter(m => m.role === 'user').length;
-      const probe = await getNextProbe(userId, messageCount);
-      let probeId = undefined;
+      // Extract response and analysis
+      const aiContent = data.message || "Connection issues... try again?";
+      const undertoneAnalysis = data.undertoneAnalysis;
+      const suggestedDelay = data.suggestedDelay || 2000;
       
-      if (probe && Math.random() < 0.5) { // 50% chance in debug mode
-        aiContent = `${aiContent}\n\n${probe.question}`;
-        probeId = probe.id;
-        
-        const probeEvent = {
-          type: 'probe_injected',
+      // Show undertone analysis in events
+      if (undertoneAnalysis) {
+        const undertoneEvent = {
+          type: 'undertone_detected',
           timestamp: new Date(),
           data: {
-            probeId: probe.id,
-            category: probe.category,
-            phase: probe.phase
+            userType: undertoneAnalysis.userType,
+            confidence: `${(undertoneAnalysis.confidence * 100).toFixed(0)}%`,
+            hiddenMeaning: undertoneAnalysis.hiddenMeaning,
+            revenuePotential: undertoneAnalysis.revenuePotential
           }
         };
-        setEvents(prev => [probeEvent, ...prev].slice(0, 50));
+        setEvents(prev => [undertoneEvent, ...prev].slice(0, 50));
       }
+      
+      // Show typing indicator for realistic delay
+      setIsLoading(true);
+      
+      // Wait for suggested delay to simulate typing
+      await new Promise(resolve => setTimeout(resolve, suggestedDelay));
       
       const aiMessage: Message = {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
         content: aiContent,
         timestamp: new Date(),
-        probeId
+        probeId: data.debugData?.probe?.id,
+        undertone: undertoneAnalysis
       };
 
       setMessages(prev => [...prev, aiMessage]);
+      
+      // Update profile if provided
+      if (data.profileUpdate) {
+        setCurrentProfile(data.profileUpdate);
+      }
       
     } catch (error) {
       console.error('Chat error:', error);
@@ -292,8 +251,8 @@ function DebugChatComponent() {
   };
 
   const resetProfile = () => {
-    const newProfile = initProfile(userId);
-    setCurrentProfile(newProfile);
+    // Profile reset now handled by unified API
+    setCurrentProfile(null);
     setEvents([{
       type: 'profile_reset',
       timestamp: new Date(),

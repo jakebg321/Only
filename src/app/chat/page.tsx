@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Send, Sparkles, User, Settings, Heart, Shield, Zap, Check, CheckCheck } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { initProfile, getNextProbe, analyzeResponse, trackBehavior, getStrategy } from "@/lib/client-profiler";
+// Removed old profiling imports - now using unified API only
 import { trackUserEvent } from "@/lib/user-analytics";
 import ContentDropOffer from "@/components/ContentDropOffer";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
@@ -115,7 +115,7 @@ function ChatComponent() {
   const [typingStartTime, setTypingStartTime] = useState<Date | null>(null);
   const [typingStops, setTypingStops] = useState(0);
   const [showContentOffer, setShowContentOffer] = useState(false);
-  const [currentProbeId, setCurrentProbeId] = useState<string | null>(null);
+  // Removed probe state - handled by unified API
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -336,8 +336,7 @@ function ChatComponent() {
     setMode('chat');
     setShowSettings(true);
     
-    // Initialize user profile
-    await initProfile(userId);
+    // Track session start
     trackUserEvent(userId, 'message_sent', { sessionStart: true });
     
     // Add welcome message
@@ -417,16 +416,10 @@ function ChatComponent() {
   const sendMessage = async () => {
     if (!input.trim() || isLoading) return;
 
-    // Track typing behavior if we were tracking
+    // Calculate typing behavior for unified API
+    let typingDuration = 0;
     if (typingStartTime) {
-      const typingDuration = new Date().getTime() - typingStartTime.getTime();
-      await trackBehavior(userId, {
-        responseTime: typingDuration,
-        messageLength: input.length,
-        typingStops: typingStops,
-        timeOfDay: new Date().getHours()
-      });
-      
+      typingDuration = new Date().getTime() - typingStartTime.getTime();
       // Reset typing tracking
       setTypingStartTime(null);
       setTypingStops(0);
@@ -448,11 +441,7 @@ function ChatComponent() {
 
     setMessages(prev => [...prev, userMessage]);
     
-    // If this was a response to a probe, analyze it
-    if (currentProbeId) {
-      await analyzeResponse(userId, currentProbeId, input);
-      setCurrentProbeId(null);
-    }
+    // Probe analysis now handled by unified API
     
     const currentInput = input; // Save input before clearing
     setInput("");
@@ -481,44 +470,32 @@ function ChatComponent() {
     }, 800);
 
     try {
-      // Send recent conversation history to maintain context
-      const conversationHistory = messages.slice(-6).map(msg => ({
-        role: msg.role,
-        content: msg.content
-      }));
-
-      const response = await fetch('/api/chat/test', {
+      // Use UNIFIED chat engine - same as debug and test lab
+      const response = await fetch('/api/chat/unified', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          userId,
           message: currentInput,
-          conversationHistory,
-          personality: {
-            name: personality.name,
-            tone: personality.tone,
-            enableEmojis: personality.enableEmojis,
-            flirtLevel: personality.flirtLevel,
-            explicitLevel: personality.explicitLevel || 2,
-            responseLength: personality.responseLength,
-            emojiFrequency: personality.emojiFrequency,
-            fantasyFocus: personality.fantasyFocus || []
-          }
+          conversationHistory: messages.map(msg => ({
+            id: msg.id,
+            role: msg.role,
+            content: msg.content,
+            timestamp: msg.timestamp
+          })),
+          debugMode: false, // Regular chat doesn't show debug info
+          responseTime: typingDuration,
+          typingStops: typingStops
         })
       });
 
       const data = await response.json();
       
       let aiContent = data.message || "Fuck, lost connection. Say that again?";
+      const suggestedDelay = data.suggestedDelay || 2000;
       
-      // Check if we should inject a preference probe
-      const messageCount = messages.filter(m => m.role === 'user').length;
-      const probe = await getNextProbe(userId, messageCount);
-      
-      if (probe && Math.random() < 0.3) { // 30% chance to include probe
-        // Naturally weave the probe into the response
-        aiContent = `${aiContent}\n\n${probe.question}`;
-        setCurrentProbeId(probe.id);
-      }
+      // Simulate realistic typing delay
+      await new Promise(resolve => setTimeout(resolve, suggestedDelay));
       
       const aiMessage: Message = {
         id: (Date.now() + 1).toString(),
@@ -534,10 +511,10 @@ function ChatComponent() {
         msg.id === userMessage.id ? { ...msg, status: 'read' } : msg
       ));
       
-      // Check if we should show a content offer based on profile
-      const strategy = await getStrategy(userId);
-      if (strategy && strategy.conversionProbability > 0.6 && messageCount > 5 && Math.random() < 0.2) {
-        // 20% chance to show offer if user is engaged
+      // Content offers now handled by unified API strategy
+      const messageCount = messages.filter(m => m.role === 'user').length;
+      if (messageCount > 5 && Math.random() < 0.1) {
+        // 10% chance to show offer if user is engaged
         setTimeout(() => {
           setShowContentOffer(true);
         }, 2000); // Show after 2 seconds
