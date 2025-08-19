@@ -7,6 +7,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Send, Sparkles, User, Settings, Heart, Shield, Zap, Check, CheckCheck } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { initProfile, getNextProbe, analyzeResponse, trackBehavior, getStrategy } from "@/lib/psychological-profiler";
+import { trackUserEvent } from "@/lib/user-analytics";
+import ContentDropOffer from "@/components/ContentDropOffer";
 
 type ChatMode = 'welcome' | 'personalize' | 'chat';
 
@@ -103,6 +106,14 @@ export default function Chat() {
   const [customPersonalities, setCustomPersonalities] = useState<any[]>([]);
   const [awaitingImageDescription, setAwaitingImageDescription] = useState(false);
   const [imageRequestType, setImageRequestType] = useState<'image' | 'video'>('image');
+  
+  // Preference tracking state
+  const [userId] = useState(`user_${Date.now()}`); // Generate unique user ID
+  const [typingStartTime, setTypingStartTime] = useState<Date | null>(null);
+  const [typingStops, setTypingStops] = useState(0);
+  const [showContentOffer, setShowContentOffer] = useState(false);
+  const [currentProbeId, setCurrentProbeId] = useState<string | null>(null);
+  
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -304,6 +315,11 @@ export default function Chat() {
     setPersonality(DEFAULT_PERSONALITY);
     setMode('chat');
     setShowSettings(true);
+    
+    // Initialize user profile
+    initProfile(userId);
+    trackUserEvent(userId, 'message_sent', { sessionStart: true });
+    
     // Add welcome message
     setMessages([{
       id: '1',
