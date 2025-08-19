@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Heart, Mail, Lock, Loader2 } from "lucide-react";
+import { Heart, Mail, Lock, Loader2, Info } from "lucide-react";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -16,6 +16,13 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [showTestCredentials, setShowTestCredentials] = useState(true);
+
+  const useTestCredentials = () => {
+    setEmail("test@example.com");
+    setPassword("testpass123");
+    setShowTestCredentials(false);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -35,14 +42,14 @@ export default function LoginPage() {
         throw new Error(data.error || "Login failed");
       }
 
-      // Store user data in localStorage for now (will use better state management later)
+      // Store user data in localStorage
       localStorage.setItem("user", JSON.stringify(data.user));
       
-      // Redirect based on user role
+      // Use window.location for consistent behavior with modal login
       if (data.user.role === "SUBSCRIBER") {
-        router.push("/chat");
+        window.location.href = "/chat";
       } else {
-        router.push("/dashboard");
+        window.location.href = "/dashboard";
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong");
@@ -65,6 +72,29 @@ export default function LoginPage() {
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
+            {/* Test Credentials Alert - Development Only */}
+            {showTestCredentials && (
+              <Alert className="mb-4 bg-blue-900/20 border-blue-500/30">
+                <Info className="h-4 w-4 text-blue-400" />
+                <AlertDescription className="text-blue-300">
+                  <div className="font-semibold mb-1">Test Account (Dev Mode)</div>
+                  <div className="text-sm space-y-1">
+                    <div>Email: test@example.com</div>
+                    <div>Password: testpass123</div>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      className="mt-2 border-blue-500/50 text-blue-300 hover:bg-blue-900/30"
+                      onClick={useTestCredentials}
+                    >
+                      Use Test Credentials
+                    </Button>
+                  </div>
+                </AlertDescription>
+              </Alert>
+            )}
+            
             {error && (
               <Alert className="bg-red-900/20 border-red-500/50 text-red-400">
                 <AlertDescription>{error}</AlertDescription>

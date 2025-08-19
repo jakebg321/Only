@@ -4,9 +4,11 @@ import { useState } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Heart, MessageCircle, Camera, Lock, Eye } from "lucide-react";
+import { MessageCircle, Camera, Lock, Eye } from "lucide-react";
 import LoginPromptModal from "@/components/LoginPromptModal";
 import { useAuth } from "@/hooks/useAuth";
+import OnlineStatusIndicator from "@/components/OnlineStatusIndicator";
+import DynamicCallToAction from "@/components/DynamicCallToAction";
 
 export default function Home() {
   const [showLoginModal, setShowLoginModal] = useState(false);
@@ -88,7 +90,6 @@ export default function Home() {
                   className="w-full h-full object-cover"
                 />
               </div>
-              <div className="absolute bottom-2 right-2 bg-green-500 w-6 h-6 rounded-full border-2 border-white"></div>
             </div>
 
             {/* Profile Info */}
@@ -96,6 +97,9 @@ export default function Home() {
               <h1 className="text-5xl font-bold mb-2 bg-gradient-to-r from-purple-400 via-pink-500 to-red-500 bg-clip-text text-transparent">
                 Hey babe, I'm Remy 💋
               </h1>
+              <div className="mb-3">
+                <OnlineStatusIndicator />
+              </div>
               <p className="text-xl text-gray-300 mb-2">
                 Welcome to my exclusive world 💕
               </p>
@@ -155,128 +159,6 @@ export default function Home() {
             </CardContent>
           </Card>
 
-          {/* Testimonials Section */}
-          <div className="mb-12">
-            <h2 className="text-3xl font-bold mb-8 text-center bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
-              What My Special Fans Say 💕
-            </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              <Card className="bg-black/40 border-purple-500/20 backdrop-blur-sm">
-                <CardContent className="p-6">
-                  <div className="flex items-center mb-4">
-                    <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center text-white font-bold">
-                      M
-                    </div>
-                    <div className="ml-3">
-                      <p className="font-semibold text-white">Mike_VIP</p>
-                      <div className="text-yellow-400 text-sm">⭐⭐⭐⭐⭐</div>
-                    </div>
-                  </div>
-                  <p className="text-gray-300 text-sm italic">
-                    "Remy actually remembers everything about me. She asked about my work presentation that I mentioned weeks ago. That's real connection!"
-                  </p>
-                </CardContent>
-              </Card>
-
-              <Card className="bg-black/40 border-purple-500/20 backdrop-blur-sm">
-                <CardContent className="p-6">
-                  <div className="flex items-center mb-4">
-                    <div className="w-10 h-10 bg-gradient-to-r from-pink-500 to-red-500 rounded-full flex items-center justify-center text-white font-bold">
-                      J
-                    </div>
-                    <div className="ml-3">
-                      <p className="font-semibold text-white">James_Close</p>
-                      <div className="text-yellow-400 text-sm">⭐⭐⭐⭐⭐</div>
-                    </div>
-                  </div>
-                  <p className="text-gray-300 text-sm italic">
-                    "I've tried other creators but Remy responds personally within minutes. She actually cares and puts real effort into everything she sends."
-                  </p>
-                </CardContent>
-              </Card>
-
-              <Card className="bg-black/40 border-purple-500/20 backdrop-blur-sm">
-                <CardContent className="p-6">
-                  <div className="flex items-center mb-4">
-                    <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full flex items-center justify-center text-white font-bold">
-                      D
-                    </div>
-                    <div className="ml-3">
-                      <p className="font-semibold text-white">David_Special</p>
-                      <div className="text-yellow-400 text-sm">⭐⭐⭐⭐⭐</div>
-                    </div>
-                  </div>
-                  <p className="text-gray-300 text-sm italic">
-                    "The custom content is incredible. You can tell she spends real time making each request perfect. Worth every penny and more."
-                  </p>
-                </CardContent>
-              </Card>
-            </div>
-          </div>
-
-          {/* Subscription Tiers */}
-          <div className="mb-12">
-            <h2 className="text-3xl font-bold mb-6 text-center bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
-              Choose Your Connection Level 💕
-            </h2>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {/* Sweet Fan Tier */}
-              <Card className="bg-black/40 border-purple-500/20 backdrop-blur-sm hover:border-purple-400/40 transition-all">
-                <CardContent className="p-6 text-center">
-                  <h3 className="text-xl font-bold text-purple-400 mb-2">Sweet Fan</h3>
-                  <div className="text-3xl font-bold text-white mb-4">$25<span className="text-lg text-gray-400">/month</span></div>
-                  <ul className="text-gray-300 space-y-2 text-left mb-6">
-                    <li className="flex items-center gap-2"><span className="text-pink-400">💕</span> Daily personal messages</li>
-                    <li className="flex items-center gap-2"><span className="text-pink-400">📸</span> Exclusive daily photos</li>
-                    <li className="flex items-center gap-2"><span className="text-pink-400">💬</span> Chat access with me</li>
-                    <li className="flex items-center gap-2"><span className="text-pink-400">🎁</span> Welcome gift package</li>
-                  </ul>
-                  <Button className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700">
-                    Start Our Connection
-                  </Button>
-                </CardContent>
-              </Card>
-
-              {/* Close Friend Tier */}
-              <Card className="bg-black/40 border-pink-500/40 backdrop-blur-sm hover:border-pink-400/60 transition-all transform scale-105">
-                <CardContent className="p-6 text-center relative">
-                  <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-gradient-to-r from-pink-500 to-purple-500 text-white px-4 py-1 rounded-full text-sm font-bold">
-                    Most Popular 🔥
-                  </div>
-                  <h3 className="text-xl font-bold text-pink-400 mb-2 mt-2">Close Friend</h3>
-                  <div className="text-3xl font-bold text-white mb-4">$75<span className="text-lg text-gray-400">/month</span></div>
-                  <ul className="text-gray-300 space-y-2 text-left mb-6">
-                    <li className="flex items-center gap-2"><span className="text-pink-400">💝</span> Everything from Sweet Fan</li>
-                    <li className="flex items-center gap-2"><span className="text-pink-400">🎨</span> Custom photo requests</li>
-                    <li className="flex items-center gap-2"><span className="text-pink-400">⚡</span> Priority responses</li>
-                    <li className="flex items-center gap-2"><span className="text-pink-400">🌅</span> Good morning texts</li>
-                    <li className="flex items-center gap-2"><span className="text-pink-400">📱</span> Behind-the-scenes content</li>
-                  </ul>
-                  <Button className="w-full bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-700 hover:to-purple-700">
-                    Get Closer to Me
-                  </Button>
-                </CardContent>
-              </Card>
-
-              {/* Special Someone Tier */}
-              <Card className="bg-black/40 border-yellow-500/20 backdrop-blur-sm hover:border-yellow-400/40 transition-all">
-                <CardContent className="p-6 text-center">
-                  <h3 className="text-xl font-bold text-yellow-400 mb-2">Special Someone</h3>
-                  <div className="text-3xl font-bold text-white mb-4">$150<span className="text-lg text-gray-400">/month</span></div>
-                  <ul className="text-gray-300 space-y-2 text-left mb-6">
-                    <li className="flex items-center gap-2"><span className="text-yellow-400">👑</span> Everything from Close Friend</li>
-                    <li className="flex items-center gap-2"><span className="text-yellow-400">📹</span> Private video calls</li>
-                    <li className="flex items-center gap-2"><span className="text-yellow-400">🎥</span> Custom video requests</li>
-                    <li className="flex items-center gap-2"><span className="text-yellow-400">💭</span> Personal stories & secrets</li>
-                    <li className="flex items-center gap-2"><span className="text-yellow-400">⭐</span> Daily check-ins</li>
-                  </ul>
-                  <Button className="w-full bg-gradient-to-r from-yellow-600 to-orange-600 hover:from-yellow-700 hover:to-orange-700">
-                    Be My Special One
-                  </Button>
-                </CardContent>
-              </Card>
-            </div>
-          </div>
 
           {/* Featured Content Preview */}
           <div className="mb-12">
@@ -340,21 +222,8 @@ export default function Home() {
             </div>
           </div>
 
-          {/* Call to Action */}
-          <Card className="bg-gradient-to-r from-purple-900/50 to-pink-900/50 border-pink-500/30 backdrop-blur-sm">
-            <CardContent className="p-8 text-center">
-              <h3 className="text-3xl font-bold mb-4 text-white">Come get to know the real me 😈</h3>
-              <p className="text-xl text-gray-200 mb-6">
-                I'm online right now and would love to chat with you personally! I put so much care into every conversation... Let me show you what makes me special 💦
-              </p>
-              <Link href="/chat">
-                <Button size="lg" className="bg-white text-purple-900 hover:bg-gray-100 font-bold px-8 py-4 text-lg">
-                  <Heart className="w-6 h-6 mr-2 text-pink-500" />
-                  Message Me Now 💋
-                </Button>
-              </Link>
-            </CardContent>
-          </Card>
+          {/* Dynamic Call to Action based on online status */}
+          <DynamicCallToAction />
         </div>
       </section>
       

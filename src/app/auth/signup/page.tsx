@@ -62,11 +62,11 @@ export default function SignupPage() {
       // Auto-login after signup
       localStorage.setItem("user", JSON.stringify(data.user));
       
-      // Redirect based on role
+      // Use window.location for consistent behavior
       if (data.user.role === "SUBSCRIBER") {
-        router.push("/chat");
+        window.location.href = "/chat";
       } else {
-        router.push("/creator/setup");
+        window.location.href = "/creator/setup";
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong");

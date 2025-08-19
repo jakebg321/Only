@@ -112,9 +112,19 @@ async function main() {
     },
   });
 
-  // Create subscription relationship
-  await prisma.creatorSubscriber.create({
-    data: {
+  // Create subscription relationship (upsert to avoid duplicates)
+  await prisma.creatorSubscriber.upsert({
+    where: {
+      creatorId_subscriberId: {
+        creatorId: creator.id,
+        subscriberId: subscriber.id,
+      },
+    },
+    update: {
+      monthlyAmount: 29.99,
+      isActive: true,
+    },
+    create: {
       creatorId: creator.id,
       subscriberId: subscriber.id,
       monthlyAmount: 29.99,
@@ -122,9 +132,18 @@ async function main() {
     },
   });
 
-  // Create manager-creator relationship
-  await prisma.managerCreator.create({
-    data: {
+  // Create manager-creator relationship (upsert to avoid duplicates)
+  await prisma.managerCreator.upsert({
+    where: {
+      managerId_creatorId: {
+        managerId: manager.id,
+        creatorId: creator.id,
+      },
+    },
+    update: {
+      isActive: true,
+    },
+    create: {
       managerId: manager.id,
       creatorId: creator.id,
       isActive: true,
