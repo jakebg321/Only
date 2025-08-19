@@ -52,6 +52,7 @@ model User {
   creator       Creator?
   subscriber    Subscriber?
   manager       Manager?
+  psychProfile  PsychologicalProfile?
 }
 
 model Creator {
@@ -243,6 +244,77 @@ model UserPreferences {
   lastActive      DateTime    @default(now())
   createdAt       DateTime    @default(now())
   updatedAt       DateTime    @updatedAt
+}
+
+// Psychological Profiling Models
+model PsychologicalProfile {
+  id                   String      @id @default(cuid())
+  userId               String      @unique
+  user                 User        @relation(fields: [userId], references: [id])
+  
+  // VEAL Framework
+  vulnerability        String      @default("UNKNOWN") // LONELY, NEGLECTED, INADEQUATE, VULNERABLE, UNKNOWN
+  ego                  String      @default("UNKNOWN") // HERO, ALPHA, PROVIDER, EXPLORER, UNKNOWN
+  attachment           String      @default("UNKNOWN") // ANXIOUS, AVOIDANT, SECURE, DISORGANIZED, UNKNOWN
+  leverage             String      @default("UNKNOWN") // FINANCIAL, EMOTIONAL, SOCIAL, SEXUAL, UNKNOWN
+  spenderLevel         String      @default("UNKNOWN") // WHALE, REGULAR, MICRO, UNKNOWN
+  
+  // Behavioral Metrics
+  responseTime         Float       @default(0) // average in ms
+  hesitationLevel      Float       @default(0) // 0-1 scale
+  engagementScore      Int         @default(50) // 0-100
+  manipulabilityScore  Int         @default(50) // 0-100
+  
+  // Profile Confidence
+  confidence           Float       @default(0) // 0-1 scale
+  dataPoints           Int         @default(0)
+  
+  // Strategy
+  recommendedStrategy  String      @default("gathering_data")
+  conversionProbability Float      @default(0.5) // 0-1
+  estimatedValue       Float       @default(0) // predicted monthly revenue
+  
+  // Insights (stored as JSON for flexibility)
+  insights             Json        @default("{}")
+  keyStatements        String[]
+  triggerWords         String[]
+  
+  createdAt            DateTime    @default(now())
+  updatedAt            DateTime    @updatedAt
+  
+  // Relations
+  probeResponses       ProbeResponse[]
+  behaviorEvents       BehaviorEvent[]
+  
+  @@index([userId])
+}
+
+model ProbeResponse {
+  id            String      @id @default(cuid())
+  profileId     String
+  profile       PsychologicalProfile @relation(fields: [profileId], references: [id])
+  
+  probeId       String      // ID of the probe question
+  question      String      @db.Text
+  response      String      @db.Text
+  category      String      // vulnerability, ego, attachment, leverage, financial
+  phase         Int         // 1, 2, or 3
+  
+  createdAt     DateTime    @default(now())
+  
+  @@index([profileId])
+}
+
+model BehaviorEvent {
+  id            String      @id @default(cuid())
+  profileId     String
+  profile       PsychologicalProfile @relation(fields: [profileId], references: [id])
+  
+  eventType     String      // message_sent, payment_viewed, typing_started, etc.
+  data          Json        // Event-specific data
+  timestamp     DateTime    @default(now())
+  
+  @@index([profileId, timestamp])
 }
 
 model ConversationMemory {

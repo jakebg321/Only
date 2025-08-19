@@ -271,8 +271,8 @@ class UserAnalyticsEngine {
     const profile = this.getUserPsychProfile(userId);
     
     const suggestions = {
-      recommendedOffers: [],
-      psychologicalTriggers: [],
+      recommendedOffers: [] as string[],
+      psychologicalTriggers: [] as string[],
       timing: '',
       pricing: '',
       messaging: ''

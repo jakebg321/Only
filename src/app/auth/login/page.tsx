@@ -18,7 +18,7 @@ export default function LoginPage() {
 
   const useTestCredentials = () => {
     setEmail("test@example.com");
-    setPassword("testpass123");
+    setPassword("test123");
     setShowTestCredentials(false);
   };
 
@@ -28,7 +28,11 @@ export default function LoginPage() {
     setIsLoading(true);
 
     try {
-      const response = await fetch("/api/auth/login", {
+      // Use test login route for test accounts
+      const isTestAccount = email === "test@example.com" || email === "creator@example.com";
+      const loginEndpoint = isTestAccount ? "/api/auth/test-login" : "/api/auth/login";
+      
+      const response = await fetch(loginEndpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
@@ -75,10 +79,16 @@ export default function LoginPage() {
               <Alert className="mb-4 bg-blue-900/20 border-blue-500/30">
                 <Info className="h-4 w-4 text-blue-400" />
                 <AlertDescription className="text-blue-300">
-                  <div className="font-semibold mb-1">Test Account (Dev Mode)</div>
-                  <div className="text-sm space-y-1">
-                    <div>Email: test@example.com</div>
-                    <div>Password: testpass123</div>
+                  <div className="font-semibold mb-1">Test Accounts (No Database Required)</div>
+                  <div className="text-sm space-y-2">
+                    <div className="p-2 bg-black/30 rounded">
+                      <div className="font-mono">test@example.com</div>
+                      <div className="text-xs text-gray-400">Password: test123</div>
+                    </div>
+                    <div className="p-2 bg-black/30 rounded">
+                      <div className="font-mono">creator@example.com</div>
+                      <div className="text-xs text-gray-400">Password: creator123</div>
+                    </div>
                     <Button
                       type="button"
                       size="sm"
@@ -86,7 +96,7 @@ export default function LoginPage() {
                       className="mt-2 border-blue-500/50 text-blue-300 hover:bg-blue-900/30"
                       onClick={useTestCredentials}
                     >
-                      Use Test Credentials
+                      Use Test Account
                     </Button>
                   </div>
                 </AlertDescription>

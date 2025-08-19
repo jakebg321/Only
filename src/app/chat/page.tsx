@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Send, Sparkles, User, Settings, Heart, Shield, Zap, Check, CheckCheck } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { initProfile, getNextProbe, analyzeResponse, trackBehavior, getStrategy } from "@/lib/psychological-profiler";
+import { initProfile, getNextProbe, analyzeResponse, trackBehavior, getStrategy } from "@/lib/database-profiler";
 import { trackUserEvent } from "@/lib/user-analytics";
 import ContentDropOffer from "@/components/ContentDropOffer";
 
@@ -397,6 +397,27 @@ export default function Chat() {
   const sendMessage = async () => {
     if (!input.trim() || isLoading) return;
 
+    // Track typing behavior if we were tracking
+    if (typingStartTime) {
+      const typingDuration = new Date().getTime() - typingStartTime.getTime();
+      trackBehavior(userId, {
+        responseTime: typingDuration,
+        messageLength: input.length,
+        typingStops: typingStops,
+        timeOfDay: new Date().getHours()
+      });
+      
+      // Reset typing tracking
+      setTypingStartTime(null);
+      setTypingStops(0);
+    }
+    
+    // Track message event
+    trackUserEvent(userId, 'message_sent', { 
+      messageLength: input.length,
+      timestamp: new Date() 
+    });
+
     const userMessage: Message = {
       id: Date.now().toString(),
       role: 'user',
@@ -406,12 +427,20 @@ export default function Chat() {
     };
 
     setMessages(prev => [...prev, userMessage]);
+    
+    // If this was a response to a probe, analyze it
+    if (currentProbeId) {
+      analyzeResponse(userId, currentProbeId, input);
+      setCurrentProbeId(null);
+    }
+    
+    const currentInput = input; // Save input before clearing
     setInput("");
 
     // Check if we're waiting for an image description
     if (awaitingImageDescription) {
       // User is providing image description
-      await submitImageRequest(input);
+      await submitImageRequest(currentInput);
       return;
     }
 
@@ -442,7 +471,7 @@ export default function Chat() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          message: input,
+          message: currentInput,
           conversationHistory,
           personality: {
             name: personality.name,
@@ -459,10 +488,22 @@ export default function Chat() {
 
       const data = await response.json();
       
+      let aiContent = data.message || "Fuck, lost connection. Say that again?";
+      
+      // Check if we should inject a preference probe
+      const messageCount = messages.filter(m => m.role === 'user').length;
+      const probe = getNextProbe(userId, messageCount);
+      
+      if (probe && Math.random() < 0.3) { // 30% chance to include probe
+        // Naturally weave the probe into the response
+        aiContent = `${aiContent}\n\n${probe.question}`;
+        setCurrentProbeId(probe.id);
+      }
+      
       const aiMessage: Message = {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
-        content: data.message || "Fuck, lost connection. Say that again?",
+        content: aiContent,
         timestamp: new Date()
       };
 
@@ -472,6 +513,15 @@ export default function Chat() {
       setMessages(prev => prev.map(msg => 
         msg.id === userMessage.id ? { ...msg, status: 'read' } : msg
       ));
+      
+      // Check if we should show a content offer based on profile
+      const strategy = getStrategy(userId);
+      if (strategy && strategy.conversionProbability > 0.6 && messageCount > 5 && Math.random() < 0.2) {
+        // 20% chance to show offer if user is engaged
+        setTimeout(() => {
+          setShowContentOffer(true);
+        }, 2000); // Show after 2 seconds
+      }
     } catch (error) {
       console.error('Chat error:', error);
       const errorMessage: Message = {
@@ -838,6 +888,27 @@ export default function Chat() {
                 </div>
               </CardContent>
 
+              {/* Content Drop Offer */}
+              {showContentOffer && (
+                <div className="p-4 border-t border-gray-700">
+                  <ContentDropOffer
+                    userId={userId}
+                    onPurchaseComplete={(content) => {
+                      setShowContentOffer(false);
+                      // Add message about unlocked content
+                      const unlockMessage: Message = {
+                        id: Date.now().toString(),
+                        role: 'assistant',
+                        content: `🔓 You unlocked exclusive content! ${content.length} items are now available for you 💕`,
+                        timestamp: new Date()
+                      };
+                      setMessages(prev => [...prev, unlockMessage]);
+                    }}
+                    className="mb-4"
+                  />
+                </div>
+              )}
+
               <div className="p-4 border-t border-gray-700">
                 {/* Quick Action Buttons */}
                 <div className="flex gap-2 mb-3 flex-wrap">
@@ -875,7 +946,18 @@ export default function Chat() {
                 <div className="flex gap-2">
                   <Textarea
                     value={input}
-                    onChange={(e) => setInput(e.target.value)}
+                    onChange={(e) => {
+                      setInput(e.target.value);
+                      
+                      // Track typing behavior
+                      if (!typingStartTime && e.target.value.length > 0) {
+                        setTypingStartTime(new Date());
+                        trackUserEvent(userId, 'typing_started', {});
+                      } else if (typingStartTime && e.target.value.length === 0) {
+                        setTypingStops(prev => prev + 1);
+                        trackUserEvent(userId, 'typing_stopped', {});
+                      }
+                    }}
                     placeholder={awaitingImageDescription 
                       ? `Describe what you want to see... (e.g., "in a red bikini by the pool")`
                       : `Message ${personality.name}...`}

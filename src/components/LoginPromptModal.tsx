@@ -30,7 +30,11 @@ export default function LoginPromptModal({ isOpen, onClose, message }: LoginProm
     setIsLoading(true);
 
     try {
-      const response = await fetch("/api/auth/login", {
+      // Use test login route for test accounts
+      const isTestAccount = email === "test@example.com" || email === "creator@example.com";
+      const loginEndpoint = isTestAccount ? "/api/auth/test-login" : "/api/auth/login";
+      
+      const response = await fetch(loginEndpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
@@ -56,7 +60,7 @@ export default function LoginPromptModal({ isOpen, onClose, message }: LoginProm
 
   const useTestCredentials = () => {
     setEmail("test@example.com");
-    setPassword("testpass123");
+    setPassword("test123");
     setShowTestCredentials(false);
   };
 
@@ -91,10 +95,10 @@ export default function LoginPromptModal({ isOpen, onClose, message }: LoginProm
             <Alert className="mb-4 bg-blue-900/20 border-blue-500/30">
               <Info className="h-4 w-4 text-blue-400" />
               <AlertDescription className="text-blue-300">
-                <div className="font-semibold mb-1">Test Account (Dev Mode)</div>
+                <div className="font-semibold mb-1">Test Account (No Database Required)</div>
                 <div className="text-sm space-y-1">
                   <div>Email: test@example.com</div>
-                  <div>Password: testpass123</div>
+                  <div>Password: test123</div>
                   <Button
                     size="sm"
                     variant="outline"

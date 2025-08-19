@@ -78,6 +78,10 @@ async function main() {
       maxResponseLength: 300,
       enableEmojis: true,
       enableMediaSuggestions: true,
+      flirtLevel: 4,
+      explicitLevel: 2,
+      fantasyFocus: ['teasing', 'roleplay', 'GFE'],
+      petNames: ['babe', 'sexy', 'baby', 'darling'],
     },
   });
 
