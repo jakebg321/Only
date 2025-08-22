@@ -28,6 +28,59 @@ Session tracking → UserSession table → Dashboard
 - Middleware adds session cookies
 ```
 
+## 🚫 CRITICAL: ANTI-DUPLICATION RULES
+
+### NEVER CREATE NEW FILES FOR EXISTING FUNCTIONALITY
+
+**Before creating ANY new file, you MUST:**
+
+1. **Search existing codebase** for similar functionality
+2. **Fix/extend existing files** instead of creating new ones  
+3. **Delete old files** when replacing functionality
+4. **Ask user permission** before creating new files
+
+### MAXIMUM FILE LIMITS (ENFORCE STRICTLY)
+
+**Analytics**: MAX 4 files total
+- `lib/analytics/session-tracker-lite.ts` (server/middleware)
+- `lib/user-analytics.ts` (core functions)
+- `hooks/useAnalytics.ts` (React hooks)
+- `components/SessionTracker.tsx` (client component)
+
+**Chat**: MAX 3 files total  
+- `lib/unified-chat-engine.ts` (main orchestrator)
+- `lib/secure-grok-client.ts` (API client)
+- API routes only
+
+**Authentication**: MAX 2 files
+**Database**: MAX 2 files per domain
+
+### BANNED FILENAME PATTERNS
+
+❌ NEVER create files with these patterns:
+- `*-lite.ts`, `*-server.ts`, `*-client.ts`
+- `advanced-*.ts`, `intelligent-*.ts`, `enterprise-*.ts`
+- `*-v2.ts`, `*-new.ts`, `*-updated.ts`, `*-optimized.ts`
+- Any numbered versions (`*-2.ts`, etc.)
+
+### REQUIRED ACTIONS BEFORE NEW FILES
+
+1. **Grep for similar functionality**: `rg "class.*Analytics"`
+2. **Check existing imports**: What's already being used?
+3. **Propose consolidation**: "Should I extend X instead?"
+4. **Get explicit approval**: User must say "yes create new file"
+
+### FILE CREATION CHECKLIST
+
+Before creating any new file, you MUST:
+- [ ] Searched for existing similar functionality
+- [ ] Confirmed no existing file can be extended  
+- [ ] Got explicit user approval
+- [ ] Will delete/consolidate old files
+- [ ] File serves unique, non-overlapping purpose
+
+**VIOLATION = IMMEDIATE STOP AND ASK FOR GUIDANCE**
+
 ---
 
 ## 🎯 PROJECT TRUTH MAP
@@ -67,9 +120,8 @@ Session tracking → UserSession table → Dashboard
 ✅ psychological-mapper.ts    - Maps 4-type to VEAL framework
 ✅ database-profiler.ts       - Stores profiles & probes
 ✅ secure-grok-client.ts      - Grok 3 integration (1M context)
-🚀 analytics/advanced-analytics-engine.ts - ENTERPRISE GRADE (NEW!)
-✅ analytics/aggregation.ts  - OPTIMIZED with RFM analysis
-✅ analytics/session-tracker-lite.ts - Edge runtime version
+✅ user-analytics.ts          - Core analytics functions
+✅ analytics/session-tracker-lite.ts - Server/middleware session tracking
 ✅ prisma-singleton.ts        - Database connection
 ```
 

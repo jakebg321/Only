@@ -1,5 +1,11 @@
 import { NextResponse } from 'next/server';
-import { EventTracker } from '@/lib/analytics/event-tracker';
+// import { EventTracker } from '@/lib/analytics/event-tracker'; // TEMP DISABLED
+
+// Temporary fallback during analytics cleanup
+const EventTracker = {
+  async trackEvent(...args: any[]) { console.log('EventTracker.trackEvent - TEMP DISABLED', args.length, 'args'); },
+  async trackBatch(...args: any[]) { console.log('EventTracker.trackBatch - TEMP DISABLED', args.length, 'args'); }
+};
 
 export async function POST(request: Request) {
   try {

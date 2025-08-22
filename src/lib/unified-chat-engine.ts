@@ -9,6 +9,10 @@ import { ResponseStrategist } from './response-strategist';
 import { databaseProfiler } from './database-profiler';
 import { SecureGrokClient } from './secure-grok-client';
 import { psychMapper } from './psychological-mapper';
+import { MemoryManager, MemoryEntry } from './memory-manager';
+import { ContextAssembler } from './context-assembler';
+import { TokenCounter } from './token-counter';
+import prisma from './prisma-singleton';
 
 export interface ChatMessage {
   id: string;
@@ -41,10 +45,14 @@ export class UnifiedChatEngine {
   private undertoneDetector: UndertoneDetector;
   private responseStrategist: ResponseStrategist;
   private grokClient: SecureGrokClient | null = null;
+  private memoryManager: MemoryManager;
+  private contextAssembler: ContextAssembler;
   
   constructor() {
     this.undertoneDetector = new UndertoneDetector();
     this.responseStrategist = new ResponseStrategist();
+    this.memoryManager = new MemoryManager();
+    this.contextAssembler = new ContextAssembler(600_000); // 600K token target for safety
   }
   
   /**
@@ -93,6 +101,42 @@ export class UnifiedChatEngine {
     console.log(`💰 Revenue Potential: ${undertoneResult.revenuePotential}`);
     console.log(`🎯 Strategy: ${undertoneResult.suggestedStrategy}`);
     
+    // 1.5. RETRIEVE AND PRIORITIZE MEMORIES USING VECTOR + REVENUE WEIGHTS
+    console.log('\\n🧠 RETRIEVING PRIORITIZED MEMORIES...');
+    
+    // Generate query embedding
+    const [queryEmbedding] = await this.memoryManager.generateEmbedding(message);
+    
+    // Get revenue weights for prioritization
+    const revenueWeights = psychMapper.getRevenueWeights();
+    
+    // Retrieve with business-value prioritization
+    const prioritizedMemories = queryEmbedding?.length > 0 
+      ? await this.memoryManager.retrieveAndPrioritize(
+          userId,
+          queryEmbedding,
+          revenueWeights,
+          8 // Get more candidates for context assembly
+        )
+      : [];
+    
+    if (prioritizedMemories.length > 0) {
+      console.log(`📚 Found ${prioritizedMemories.length} prioritized memories by revenue value:`);
+      prioritizedMemories.forEach((mem, i) => {
+        console.log(`  ${i+1}. [${mem.undertone}] Score: ${mem.score.toFixed(3)} | "${mem.content.slice(0, 50)}..."`);
+      });
+    } else {
+      console.log('📚 No prioritized memories found (new user or no vectors)');
+    }
+    
+    // 1.6. RETRIEVE SESSION SUMMARIES
+    console.log('\\n📋 RETRIEVING SESSION SUMMARIES...');
+    const sessionSummaries = await this.getSessionSummaries(userId, 5);
+    console.log(`📖 Found ${sessionSummaries.length} session summaries for context`);
+    
+    // Compress memories to reduce redundancy
+    const compressedMemories = this.contextAssembler.compressMemories(prioritizedMemories);
+    
     // 2. UPDATE PSYCHOLOGICAL PROFILE
     await this.updateProfile(userId, message, undertoneResult, options.responseTime);
     
@@ -132,35 +176,49 @@ export class UnifiedChatEngine {
       conversationHistory
     );
     
-    // 5. GENERATE AI RESPONSE
+    // 5. ASSEMBLE FULL CONTEXT FOR GROK-3's 1M WINDOW
     let aiResponse = '';
-    let psychPrompt = null;
+    let assembledContext = null;
     
     if (this.grokClient) {
-      // Use real AI with psychological context
-      psychPrompt = this.buildPsychologicalPrompt(
-        message,
-        undertoneResult,
-        strategy,
-        probe
-      );
-      
       try {
+        // Build psychological system prompt
+        const systemPrompt = this.buildPsychologicalPrompt(
+          message,
+          undertoneResult,
+          strategy,
+          probe
+        );
+        
+        // Assemble tiered context
+        assembledContext = this.contextAssembler.assembleContext({
+          system: systemPrompt,
+          prioritizedMemories: compressedMemories,
+          sessionSummaries: sessionSummaries,
+          recentHistory: conversationHistory,
+          currentMessage: message
+        });
+        
+        // Generate with full context
+        console.log(`\\n🎯 GENERATING WITH ${assembledContext.tokenUsage.total.toLocaleString()} TOKENS (${assembledContext.tokenUsage.utilization})`);
+        
         aiResponse = await this.grokClient.generateSecureResponse(
-          psychPrompt,
+          message, // This will be overridden by the assembled messages
           strategy.personality,
-          conversationHistory.map(m => ({
-            role: m.role,
+          assembledContext.messages.map(m => ({
+            role: m.role as 'user' | 'assistant' | 'system',
             content: m.content
           }))
         );
+        
       } catch (error) {
-        console.error('AI generation failed:', error);
+        console.error('Context assembly or AI generation failed:', error);
         aiResponse = strategy.fallbackResponse;
       }
     } else {
       // Fallback to template response
       aiResponse = strategy.fallbackResponse;
+      console.warn('🚨 Grok client not available - using fallback response');
     }
     
     // 6. INJECT PROBE IF NEEDED
@@ -168,10 +226,38 @@ export class UnifiedChatEngine {
       aiResponse = this.injectProbe(aiResponse, probe);
     }
     
-    // 7. CALCULATE REALISTIC DELAY
+    // 7. STORE CURRENT MESSAGE IN VECTOR MEMORY
+    console.log('\\n💾 STORING MESSAGE IN MEMORY...');
+    try {
+      // Find or create a chat session to store memory
+      const chatSession = await prisma.chatSession.findFirst({
+        where: { subscriberId: userId },
+        orderBy: { lastMessageAt: 'desc' }
+      });
+      
+      if (chatSession) {
+        await this.memoryManager.storeMemory(
+          chatSession.id,
+          message,
+          undertoneResult.userType,
+          prisma
+        );
+        
+        // Get updated memory stats for debugging
+        const memoryStats = await this.memoryManager.getMemoryStats(userId, prisma);
+        console.log(`📊 Memory Stats: ${memoryStats.totalMemories} total, ${memoryStats.withEmbeddings} with embeddings (${memoryStats.embeddingCoverage}% coverage)`);
+      }
+    } catch (error) {
+      console.error('Memory storage failed (non-critical):', error);
+    }
+    
+    // 8. CALCULATE REALISTIC DELAY
     const suggestedDelay = this.calculateResponseDelay(aiResponse, undertoneResult.userType);
     
-    // 8. BUILD RESPONSE
+    // 9. CHECK FOR SESSION END & ASYNC SUMMARIZATION
+    await this.checkForSessionEnd(userId, conversationHistory, undertoneResult);
+    
+    // 10. BUILD RESPONSE
     const response: ChatResponse = {
       message: aiResponse,
       suggestedDelay
@@ -184,8 +270,19 @@ export class UnifiedChatEngine {
       response.debugData = {
         strategy,
         probe,
-        psychPrompt: this.grokClient ? psychPrompt : null,
-        sessionDuration: this.calculateSessionDuration(conversationHistory)
+        contextAssembly: assembledContext ? {
+          tokenUsage: assembledContext.tokenUsage,
+          compressionRatio: assembledContext.compressionRatio,
+          memoryCount: prioritizedMemories.length,
+          summaryCount: sessionSummaries.length
+        } : null,
+        sessionDuration: this.calculateSessionDuration(conversationHistory),
+        memoryPrioritization: prioritizedMemories.map(mem => ({
+          undertone: mem.undertone,
+          score: mem.score,
+          similarity: mem.similarity,
+          confidence: mem.confidence
+        }))
       };
     }
     
@@ -220,13 +317,131 @@ CRITICAL RULES:
 1. Match their energy - if they wrote 3 words, you write 5-10 max
 2. Never directly mention what you've figured out about them
 3. Respond to their hidden meaning, not their literal words
-4. ${undertone.userType === 'MARRIED_GUILTY' ? 'Emphasize discretion and secrecy' : ''}
-5. ${undertone.userType === 'LONELY_SINGLE' ? 'Be caring and remember details' : ''}
-6. ${undertone.userType === 'HORNY_ADDICT' ? 'Tease and escalate quickly' : ''}
-7. NEVER ask for their name again - if they don't give a name, just call them "baby" or "sexy"
-8. Stop asking "what should I call you" - move the conversation forward
+4. Use context naturally - reference patterns WITHOUT explicitly saying "I remember"
+5. ${undertone.userType === 'MARRIED_GUILTY' ? 'Emphasize discretion and secrecy' : ''}
+6. ${undertone.userType === 'LONELY_SINGLE' ? 'Be caring and remember details' : ''}
+7. ${undertone.userType === 'HORNY_ADDICT' ? 'Tease and escalate quickly' : ''}
+8. NEVER ask for their name again - if they don't give a name, just call them "baby" or "sexy"
+9. Stop asking "what should I call you" - move the conversation forward
 
 Generate a response that follows this strategy exactly.`;
+  }
+  
+  /**
+   * Get session summaries for context assembly
+   */
+  private async getSessionSummaries(userId: string, limit: number = 5): Promise<string[]> {
+    try {
+      // Retrieve stored summaries from previous sessions
+      const summaryRows = await prisma.chatSession.findMany({
+        where: {
+          subscriberId: userId,
+          // Look for sessions with summaries
+          summary: { 
+            not: null,
+          }
+        },
+        select: {
+          summary: true,
+          startedAt: true
+        },
+        orderBy: { startedAt: 'desc' },
+        take: limit
+      });
+
+      return summaryRows.map(row => row.summary || '').filter(summary => summary.length > 0);
+
+    } catch (error) {
+      console.error('[UNIFIED-CHAT] ❌ Failed to retrieve session summaries:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Detect if session should end and trigger async summarization
+   */
+  private async checkForSessionEnd(
+    userId: string,
+    conversationHistory: ChatMessage[],
+    currentUndertone: any
+  ): Promise<void> {
+    // Session end heuristics
+    const messageCount = conversationHistory.length;
+    const lastMessage = conversationHistory[conversationHistory.length - 1];
+    const timeSinceStart = this.calculateSessionDuration(conversationHistory);
+    
+    const shouldEndSession = (
+      messageCount >= 20 ||  // Long conversation
+      timeSinceStart >= 30 || // 30+ minute session
+      this.isExitSignal(lastMessage?.content || '') // User signaling end
+    );
+
+    if (shouldEndSession && messageCount >= 5) {
+      console.log(`\\n🏁 SESSION END DETECTED - Triggering async summarization`);
+      console.log(`   Messages: ${messageCount}, Duration: ${timeSinceStart}min`);
+      
+      // Async summarization (non-blocking)
+      this.triggerAsyncSummarization(userId, conversationHistory, currentUndertone)
+        .catch(error => {
+          console.error('[UNIFIED-CHAT] ❌ Async summarization failed:', error);
+        });
+    }
+  }
+
+  /**
+   * Trigger async session summarization
+   */
+  private async triggerAsyncSummarization(
+    userId: string,
+    conversationHistory: ChatMessage[],
+    undertone: any
+  ): Promise<void> {
+    try {
+      // Find or create session record
+      const chatSession = await prisma.chatSession.findFirst({
+        where: { subscriberId: userId },
+        orderBy: { lastMessageAt: 'desc' }
+      });
+
+      if (!chatSession) {
+        console.warn('[UNIFIED-CHAT] ⚠️ No chat session found for summarization');
+        return;
+      }
+
+      // Generate summary
+      const summary = await this.memoryManager.summarizeSession(
+        conversationHistory,
+        undertone,
+        chatSession.id
+      );
+
+      // Store vectorized summary
+      await this.memoryManager.vectorizeAndStore(
+        userId,
+        summary,
+        undertone,
+        chatSession.id,
+        prisma
+      );
+
+      console.log(`[UNIFIED-CHAT] ✅ Async summarization complete for session ${chatSession.id.slice(0, 8)}`);
+
+    } catch (error) {
+      console.error('[UNIFIED-CHAT] ❌ Async summarization error:', error);
+    }
+  }
+
+  /**
+   * Detect exit signals in user messages
+   */
+  private isExitSignal(message: string): boolean {
+    const exitPatterns = [
+      /\b(bye|goodbye|see you|talk later|ttyl|gotta go|leaving)\b/i,
+      /\b(enough|stop|done|finished)\b/i,
+      /^(ok|k|thanks)\.?$/i
+    ];
+
+    return exitPatterns.some(pattern => pattern.test(message));
   }
   
   /**

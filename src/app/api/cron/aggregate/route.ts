@@ -1,5 +1,12 @@
 import { NextResponse } from 'next/server';
-import { AggregationService } from '@/lib/analytics/aggregation';
+// import { AggregationService } from '@/lib/analytics/aggregation'; // TEMP DISABLED
+
+// Temporary fallback during analytics cleanup
+const AggregationService = {
+  async aggregateUserMetrics() { console.log('AggregationService.aggregateUserMetrics - TEMP DISABLED'); },
+  async cleanupOldData() { console.log('AggregationService.cleanupOldData - TEMP DISABLED'); },
+  async benchmarkPerformance() { console.log('AggregationService.benchmarkPerformance - TEMP DISABLED'); }
+};
 
 // This endpoint should be called by a cron job (e.g., Vercel Cron, GitHub Actions, or external service)
 // Recommended frequency: Every hour for user metrics, daily for cleanup

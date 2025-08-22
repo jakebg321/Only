@@ -274,6 +274,19 @@ export class PsychologicalMapper {
   }
   
   /**
+   * Get revenue weights for memory prioritization
+   */
+  getRevenueWeights(): Record<string, number> {
+    return {
+      [UserType.MARRIED_GUILTY]: 0.65,  // 65% of revenue
+      [UserType.LONELY_SINGLE]: 0.20,   // 20% of revenue
+      [UserType.HORNY_ADDICT]: 0.10,    // 10% of revenue
+      [UserType.CURIOUS_TOURIST]: 0.05, // 5% of revenue
+      [UserType.UNKNOWN]: 0.01          // Minimal weight
+    };
+  }
+  
+  /**
    * Get revenue optimization strategy based on type
    */
   getRevenueStrategy(userType: UserType): {

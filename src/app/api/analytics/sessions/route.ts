@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma-singleton';
-import { AdvancedAnalyticsEngine } from '@/lib/analytics/advanced-analytics-engine';
+// import { AdvancedAnalyticsEngine } from '@/lib/analytics/advanced-analytics-engine'; // TEMP DISABLED
 
 export async function GET(request: Request) {
   try {
