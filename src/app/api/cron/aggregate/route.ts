@@ -29,21 +29,19 @@ export async function GET(request: Request) {
         await AggregationService.aggregateUserMetrics();
         break;
       
-      case 'engagement':
-        await AggregationService.calculateEngagementScores();
-        break;
-      
-      case 'personality':
-        await AggregationService.analyzePersonalityEffectiveness();
-        break;
-      
       case 'cleanup':
         await AggregationService.cleanupOldData();
         break;
       
+      case 'benchmark':
+        await AggregationService.benchmarkPerformance();
+        break;
+      
       case 'all':
       default:
-        await AggregationService.runAll();
+        // Run optimized aggregation and cleanup
+        await AggregationService.aggregateUserMetrics();
+        await AggregationService.cleanupOldData();
         break;
     }
     
@@ -78,21 +76,19 @@ export async function POST(request: Request) {
         await AggregationService.aggregateUserMetrics();
         break;
       
-      case 'engagement':
-        await AggregationService.calculateEngagementScores();
-        break;
-      
-      case 'personality':
-        await AggregationService.analyzePersonalityEffectiveness();
-        break;
-      
       case 'cleanup':
         await AggregationService.cleanupOldData();
         break;
       
+      case 'benchmark':
+        await AggregationService.benchmarkPerformance();
+        break;
+      
       case 'all':
       default:
-        await AggregationService.runAll();
+        // Run optimized aggregation and cleanup
+        await AggregationService.aggregateUserMetrics();
+        await AggregationService.cleanupOldData();
         break;
     }
     

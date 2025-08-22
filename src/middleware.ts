@@ -22,25 +22,33 @@ const publicRoutes = [
   '/chat/debug',
 ];
 
-// Helper function to persist session data to database
-async function persistSessionData(sessionData: any, request: NextRequest) {
+// Helper function to trigger intelligent session lifecycle management
+async function triggerSessionLifecycleManagement(request: NextRequest) {
   try {
-    const baseUrl = request.nextUrl.origin;
-    const response = await fetch(`${baseUrl}/api/analytics/session`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(sessionData)
-    });
+    // Only run lifecycle management periodically to avoid overhead
+    const lastManagement = request.cookies.get('last_lifecycle_check')?.value;
+    const now = Date.now();
     
-    if (response.ok) {
-      console.log(`[MIDDLEWARE-SESSION] 💾 Session persisted:`, sessionData.sessionId);
-    } else {
-      console.error(`[MIDDLEWARE-SESSION] ❌ Failed to persist session:`, response.status);
+    if (!lastManagement || (now - parseInt(lastManagement)) > 5 * 60 * 1000) { // Every 5 minutes
+      const baseUrl = request.nextUrl.origin;
+      
+      // Trigger background lifecycle management via API
+      fetch(`${baseUrl}/api/analytics/lifecycle`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ trigger: 'middleware' })
+      }).catch(error => {
+        console.error('[MIDDLEWARE] Lifecycle management trigger failed:', error);
+      });
+      
+      console.log('[MIDDLEWARE] 🔄 Triggered intelligent session lifecycle management');
+      return now.toString();
     }
+    
+    return lastManagement;
   } catch (error) {
-    console.error(`[MIDDLEWARE-SESSION] ❌ Session persistence error:`, error);
+    console.error('[MIDDLEWARE] Session lifecycle trigger error:', error);
+    return null;
   }
 }
 
@@ -110,6 +118,17 @@ export async function middleware(request: NextRequest) {
   // Add session data as header for downstream processing
   if (sessionData && shouldTrack) {
     response.headers.set('x-session-data', JSON.stringify(sessionData));
+    
+    // Trigger intelligent session lifecycle management periodically
+    const lifecycleTimestamp = await triggerSessionLifecycleManagement(request);
+    if (lifecycleTimestamp) {
+      response.cookies.set('last_lifecycle_check', lifecycleTimestamp, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        maxAge: 60 * 60 * 24 // 24 hours
+      });
+    }
     
     // NOTE: Session persistence is handled by the SessionTracker component
     // to avoid duplicate tracking and Edge Runtime limitations

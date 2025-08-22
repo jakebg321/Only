@@ -10,12 +10,18 @@ export async function POST(request: Request) {
       browser, 
       os, 
       deviceType, 
-      ipAddress, 
       referrer, 
       currentPage, 
       userId,
       timestamp 
     } = sessionData;
+    
+    // Get real IP address from request headers
+    const forwarded = request.headers.get('x-forwarded-for');
+    const realIp = request.headers.get('x-real-ip');
+    const clientIp = forwarded?.split(',')[0] || realIp || 'unknown';
+    
+    console.log(`[SESSION-API] 🌐 Real IP detected: ${clientIp} (forwarded: ${forwarded}, real: ${realIp})`);
     
     // Check if session exists
     const existingSession = await prisma.userSession.findUnique({
@@ -49,7 +55,7 @@ export async function POST(request: Request) {
       await prisma.userSession.create({
         data: {
           sessionId,
-          ipAddress,
+          ipAddress: clientIp, // Use real IP instead of client-provided value
           userAgent,
           browser,
           os,
