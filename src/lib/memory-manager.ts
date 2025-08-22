@@ -20,18 +20,11 @@ export interface PrioritizedMemory extends MemoryEntry {
 }
 
 export class MemoryManager {
-  private runpodEndpoint = process.env.RUNPOD_ENDPOINT || '';
-  private runpodApiKey = process.env.RUNPOD_API_KEY || '';
   private grokClient: SecureGrokClient | null = null;
-  private embeddingsEnabled = false;
+  private embeddingsEnabled = true; // Always enabled with local embeddings
 
   constructor() {
-    // Check if RunPod is properly configured
-    this.embeddingsEnabled = !!(this.runpodApiKey && this.runpodEndpoint && !this.runpodEndpoint.includes('your-endpoint-id'));
-    
-    if (!this.embeddingsEnabled) {
-      console.log('[MEMORY-MANAGER] ⚠️ RunPod not configured - using mock embeddings. Add RUNPOD_API_KEY and RUNPOD_ENDPOINT to .env');
-    }
+    console.log('[MEMORY-MANAGER] 🚀 Using local embeddings service');
     
     // Initialize Grok client for summarization if API key available
     if (process.env.GROK_API_KEY) {
@@ -40,60 +33,34 @@ export class MemoryManager {
   }
 
   /**
-   * Generate embeddings using RunPod
+   * Generate embeddings using local Transformers.js service
    */
   async generateEmbedding(text: string | string[]): Promise<number[][]> {
-    if (!this.embeddingsEnabled) {
-      // Return mock embeddings for development/testing
-      const textArray = Array.isArray(text) ? text : [text];
-      return textArray.map((t) => {
-        // Generate deterministic 384-dim mock embedding
-        const mockEmbedding = Array(384).fill(0).map((_, i) => {
-          const hash = t.charCodeAt(i % t.length) / 255;
-          return (Math.sin(hash * i) + Math.cos(hash * (i + 1))) / 2;
-        });
-        return mockEmbedding;
-      });
-    }
-
     try {
-      const response = await fetch(this.runpodEndpoint, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${this.runpodApiKey}`,
-        },
-        body: JSON.stringify({
-          input: { text: Array.isArray(text) ? text : [text] },
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error(`RunPod API error: ${response.status} ${response.statusText}`);
-      }
-
-      const result = await response.json();
-      const embeddings = result.output;
-
-      if (!Array.isArray(embeddings) || embeddings.length === 0) {
-        throw new Error('Invalid embedding response from RunPod');
-      }
-
-      console.log(`[MEMORY-MANAGER] 🧠 Generated ${embeddings.length} embeddings (${embeddings[0]?.length || 0} dims)`);
+      // Import the embeddings service
+      const { embeddingsService } = await import('./embeddings-service');
+      
+      // Generate embeddings using local Transformers.js
+      const embeddings = await embeddingsService.generateEmbeddings(text);
+      
+      console.log(`[MEMORY-MANAGER] 🧠 Generated ${embeddings.length} local embeddings (384 dims)`);
       return embeddings;
       
     } catch (error) {
-      console.error('[MEMORY-MANAGER] ❌ RunPod failed, using mock embeddings:', error);
+      console.error('[MEMORY-MANAGER] ❌ Embedding generation failed:', error);
       
-      // Return mock embeddings as fallback
+      // Fallback to deterministic mock embeddings if service fails
       const textArray = Array.isArray(text) ? text : [text];
-      return textArray.map((t) => {
-        const mockEmbedding = Array(384).fill(0).map((_, i) => {
+      const embeddings = textArray.map((t) => {
+        const embedding = Array(384).fill(0).map((_, i) => {
           const hash = t.charCodeAt(i % t.length) / 255;
           return (Math.sin(hash * i) + Math.cos(hash * (i + 1))) / 2;
         });
-        return mockEmbedding;
+        return embedding;
       });
+      
+      console.log('[MEMORY-MANAGER] ⚠️ Using fallback mock embeddings');
+      return embeddings;
     }
   }
 

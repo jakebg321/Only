@@ -27,7 +27,7 @@ vector | 0.5.0 | 0.5.0 | vector data type and operators
 ```
 
 ### 1.2 Embedding Infrastructure
-**Critical Question**: Is the RunPod GPU embedding service (sentence-transformers/all-MiniLM-L6-v2) operational and producing 384D vectors?
+**Critical Question**: Is the local embedding service (sentence-transformers/all-MiniLM-L6-v2 via Transformers.js) operational and producing 384D vectors?
 
 **Verification Tests**:
 - [ ] **Q6**: Does `memory-manager.ts` have a working `generateEmbeddings()` function?
@@ -280,7 +280,7 @@ Signals:
 
 **Resilience Tests**:
 - [ ] **Q81**: What happens when pgvector is down? (Should fallback to recent history)
-- [ ] **Q82**: What happens when RunPod embedding fails? (Should use cached or skip)
+- [ ] **Q82**: What happens when local embedding fails? (Should use fallback mock embeddings)
 - [ ] **Q83**: What happens when Grok-3 times out? (Should retry with smaller context)
 - [ ] **Q84**: What happens with new users (no history)? (Should use defaults)
 - [ ] **Q85**: What happens at token overflow? (Should prune intelligently)

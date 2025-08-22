@@ -307,7 +307,7 @@ function ChatComponent() {
 
       const data = await response.json();
       
-      let aiContent = data.message || "Fuck, lost connection. Say that again?";
+      const aiContent = data.message || "Fuck, lost connection. Say that again?";
       const suggestedDelay = data.suggestedDelay || 2000;
       
       // Track personality detection if updated

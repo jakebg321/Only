@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import Link from 'next/link';
 
 export default function AnalyticsTestPage() {
   const [sessions, setSessions] = useState<any[]>([]);
@@ -162,9 +163,9 @@ export default function AnalyticsTestPage() {
           <a href="/api/analytics/sessions" target="_blank" className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
             🔗 Raw API Data
           </a>
-          <a href="/" className="px-6 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700">
+          <Link href="/" className="px-6 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700">
             🏠 Home Page
-          </a>
+          </Link>
         </div>
       </div>
     </div>

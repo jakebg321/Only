@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 // TEMP DISABLED - analytics files were cleaned up
 
-export async function POST(request: NextRequest) {
+export async function POST() {
   return NextResponse.json({ message: 'Lifecycle analytics temporarily disabled due to analytics cleanup' });
 }
 

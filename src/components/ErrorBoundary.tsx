@@ -125,7 +125,7 @@ export class ErrorBoundary extends Component<Props, State> {
 }
 
 // Async error boundary for handling Promise rejections
-export function withAsyncErrorBoundary<T extends {}>(
+export function withAsyncErrorBoundary<T extends object>(
   Component: React.ComponentType<T>
 ): React.ComponentType<T> {
   return function WrappedComponent(props: T) {

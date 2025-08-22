@@ -111,7 +111,7 @@ export class DeduplicationUtils {
     const grouped = this.groupSimilarContent(deduplicated, 0.7);
     
     // Third pass: truncate if needed
-    let totalLength = grouped.join(' ').length;
+    const totalLength = grouped.join(' ').length;
     if (totalLength <= maxLength) {
       return grouped;
     }
