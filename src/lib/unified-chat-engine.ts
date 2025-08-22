@@ -116,7 +116,8 @@ export class UnifiedChatEngine {
           userId,
           queryEmbedding,
           revenueWeights,
-          8 // Get more candidates for context assembly
+          8, // Get more candidates for context assembly
+          prisma // Pass prisma instance
         )
       : [];
     

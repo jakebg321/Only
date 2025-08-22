@@ -3,11 +3,23 @@
  * Uses Transformers.js to generate embeddings on Render (no external APIs)
  */
 
-import { pipeline, env } from '@xenova/transformers';
+// Dynamic import to handle module errors gracefully
+let pipeline: any;
+let env: any;
 
-// Configure Transformers.js for Node.js environment
-env.allowLocalModels = false;
-env.allowRemoteModels = true;
+try {
+  const transformers = require('@xenova/transformers');
+  pipeline = transformers.pipeline;
+  env = transformers.env;
+} catch (error) {
+  console.warn('[EMBEDDINGS] ⚠️ Transformers.js not available, will use fallback embeddings');
+}
+
+// Configure Transformers.js for Node.js environment (if available)
+if (env) {
+  env.allowLocalModels = false;
+  env.allowRemoteModels = true;
+}
 
 export class EmbeddingsService {
   private static instance: EmbeddingsService;
@@ -29,6 +41,12 @@ export class EmbeddingsService {
    */
   private async initialize(): Promise<void> {
     if (this.extractor) return;
+    
+    // Check if pipeline is available
+    if (!pipeline) {
+      console.log('[EMBEDDINGS] ⚠️ Using fallback embeddings (Transformers.js not available)');
+      return;
+    }
     
     if (this.isLoading) {
       // Wait for existing load to complete
@@ -52,8 +70,9 @@ export class EmbeddingsService {
         );
         console.log('[EMBEDDINGS] ✅ Model loaded successfully');
       } catch (error) {
-        console.error('[EMBEDDINGS] ❌ Failed to load model:', error);
-        throw error;
+        console.error('[EMBEDDINGS] ❌ Model load failed, using fallback:', error);
+        // Don't throw - will use fallback embeddings
+        this.extractor = null;
       } finally {
         this.isLoading = false;
       }
@@ -78,6 +97,14 @@ export class EmbeddingsService {
       console.log(`[EMBEDDINGS] 🧮 Generating embeddings for ${texts.length} text(s)...`);
 
       for (const t of texts) {
+        // Check if extractor is available
+        if (!this.extractor) {
+          // Use fallback if model not loaded
+          const fallbackEmbedding = this.generateFallbackEmbedding(t);
+          embeddings.push(fallbackEmbedding);
+          continue;
+        }
+        
         // Generate embedding
         const output = await this.extractor(t, {
           pooling: 'mean',
@@ -95,9 +122,9 @@ export class EmbeddingsService {
     } catch (error) {
       console.error('[EMBEDDINGS] ❌ Generation failed:', error);
       
-      // Return zero vectors as fallback
+      // Return deterministic fallback embeddings
       const texts = Array.isArray(text) ? text : [text];
-      return texts.map(() => Array(384).fill(0));
+      return texts.map(t => this.generateFallbackEmbedding(t));
     }
   }
 
@@ -127,6 +154,17 @@ export class EmbeddingsService {
     }
 
     return dotProduct / (normA * normB);
+  }
+
+  /**
+   * Generate deterministic fallback embedding for a text
+   */
+  private generateFallbackEmbedding(text: string): number[] {
+    const embedding = Array(384).fill(0).map((_, i) => {
+      const hash = text.charCodeAt(i % text.length) / 255;
+      return (Math.sin(hash * i) + Math.cos(hash * (i + 1))) / 2;
+    });
+    return embedding;
   }
 }
 

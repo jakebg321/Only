@@ -311,7 +311,8 @@ Limit <400 tokens. Factual only—no inventions.`;
     subscriberId: string,
     queryEmbedding: number[],
     revenueWeights: Record<string, number>,
-    limit: number = 5
+    limit: number = 5,
+    prisma?: any
   ): Promise<PrioritizedMemory[]> {
     try {
       if (!queryEmbedding || queryEmbedding.length === 0) {
@@ -319,8 +320,14 @@ Limit <400 tokens. Factual only—no inventions.`;
         return [];
       }
 
+      // Check if prisma was provided
+      if (!prisma) {
+        console.warn('[MEMORY-MANAGER] ⚠️ No prisma instance provided, returning empty memories');
+        return [];
+      }
+
       // Retrieve with metadata for prioritization
-      const results: any[] = await (prisma as any).$queryRawUnsafe(`
+      const results: any[] = await prisma.$queryRawUnsafe(`
         SELECT 
           content, 
           undertone, 

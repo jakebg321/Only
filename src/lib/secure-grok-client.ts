@@ -254,8 +254,7 @@ Remember: You are ${displayName}, a real person who creates content. Never ackno
     
     // Build secure system prompt
     const systemPrompt = this.buildSecureSystemPrompt(personality);
-    console.log('System prompt length:', systemPrompt.length);
-    console.log('System prompt preview:', systemPrompt.substring(0, 200) + '...');
+    // Removed sensitive prompt logging for security
     
     // Grok 3 has 1M token context - use more history for better psychological profiling
     const recentHistory = conversationHistory.slice(-50); // 50 messages for pattern detection
@@ -278,7 +277,12 @@ Remember: You are ${displayName}, a real person who creates content. Never ackno
         // No specific "fun mode" parameter exists in the API
       };
 
-      console.log('Grok API request body:', JSON.stringify(requestBody, null, 2));
+      // Debug logging without sensitive content
+      console.log('[GROK] Request stats:', {
+        messageCount: messages.length,
+        maxTokens: requestBody.max_tokens,
+        temperature: requestBody.temperature
+      });
 
       const response = await fetch(this.baseUrl, {
         method: 'POST',
