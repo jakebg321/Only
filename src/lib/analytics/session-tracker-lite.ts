@@ -21,29 +21,40 @@ export class SessionTrackerLite {
   }
   
   static parseUserAgent(userAgent: string): { browser: string; os: string; deviceType: string } {
+    // Handle empty or missing user agent
+    if (!userAgent) {
+      return { browser: 'other', os: 'other', deviceType: 'desktop' };
+    }
+    
     const ua = userAgent.toLowerCase();
     
-    // Detect browser
-    let browser = 'unknown';
-    if (ua.includes('chrome')) browser = 'chrome';
-    else if (ua.includes('safari')) browser = 'safari';
+    // Detect browser (order matters - check more specific first)
+    let browser = 'other';
+    if (ua.includes('edg/') || ua.includes('edge')) browser = 'edge';
+    else if (ua.includes('chrome') && !ua.includes('edg')) browser = 'chrome';
+    else if (ua.includes('safari') && !ua.includes('chrome')) browser = 'safari';
     else if (ua.includes('firefox')) browser = 'firefox';
-    else if (ua.includes('edge')) browser = 'edge';
+    else if (ua.includes('opera') || ua.includes('opr/')) browser = 'opera';
+    else if (ua.includes('bot') || ua.includes('crawler')) browser = 'bot';
     
     // Detect OS
-    let os = 'unknown';
-    if (ua.includes('windows')) os = 'windows';
-    else if (ua.includes('mac')) os = 'macos';
+    let os = 'other';
+    if (ua.includes('windows nt') || ua.includes('win32') || ua.includes('win64')) os = 'windows';
+    else if (ua.includes('mac os x') || ua.includes('macintosh')) os = 'macos';
     else if (ua.includes('android')) os = 'android';
-    else if (ua.includes('iphone') || ua.includes('ipad')) os = 'ios';
+    else if (ua.includes('iphone') || ua.includes('ipad') || ua.includes('ipod')) os = 'ios';
     else if (ua.includes('linux')) os = 'linux';
+    else if (ua.includes('ubuntu')) os = 'ubuntu';
+    else if (ua.includes('x11')) os = 'unix';
     
     // Detect device type
     let deviceType = 'desktop';
-    if (ua.includes('mobile') || ua.includes('android') || ua.includes('iphone')) {
+    if (ua.includes('mobile') || ua.includes('android') || ua.includes('iphone') || ua.includes('ipod')) {
       deviceType = 'mobile';
     } else if (ua.includes('tablet') || ua.includes('ipad')) {
       deviceType = 'tablet';
+    } else if (ua.includes('bot') || ua.includes('crawler')) {
+      deviceType = 'bot';
     }
     
     return { browser, os, deviceType };
@@ -69,7 +80,21 @@ export class SessionTrackerLite {
     const currentPage = request.nextUrl.pathname;
     
     // Get user ID from JWT if authenticated
-    const userId = request.cookies.get('userId')?.value || null;
+    let userId = null;
+    const authToken = request.cookies.get('authToken')?.value;
+    if (authToken) {
+      try {
+        // Decode JWT to get userId (without verification since we're just extracting data)
+        const payload = authToken.split('.')[1];
+        if (payload) {
+          const decoded = JSON.parse(Buffer.from(payload, 'base64').toString());
+          userId = decoded.userId || decoded.id || null;
+        }
+      } catch (e) {
+        // Silent fail - user just won't be tracked
+        userId = null;
+      }
+    }
     
     return {
       sessionId,
