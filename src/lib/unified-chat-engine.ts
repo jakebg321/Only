@@ -4,14 +4,16 @@
  * Used by both regular chat and debug chat
  */
 
-import { UndertoneDetector, UserType } from './undertone-detector';
+import { HybridUndertoneDetector } from './hybrid-undertone-detector';
+import { UserType } from './undertone-detector';
 import { ResponseStrategist } from './response-strategist';
 import { databaseProfiler } from './database-profiler';
 import { SecureGrokClient } from './secure-grok-client';
 import { psychMapper } from './psychological-mapper';
-import { MemoryManager, MemoryEntry } from './memory-manager';
+import { MemoryManager } from './memory-manager';
 import { ContextAssembler } from './context-assembler';
 import { TokenCounter } from './token-counter';
+import { HumanVariations } from './human-variations';
 import prisma from './prisma-singleton';
 
 export interface ChatMessage {
@@ -38,21 +40,24 @@ export interface ChatResponse {
   undertoneAnalysis?: any;
   profileUpdate?: any;
   suggestedDelay?: number; // How long to wait before showing response
+  followUp?: string; // Optional follow-up message (like "wait that came out wrong")
   debugData?: any; // Only included in debug mode
 }
 
 export class UnifiedChatEngine {
-  private undertoneDetector: UndertoneDetector;
+  private undertoneDetector: HybridUndertoneDetector;
   private responseStrategist: ResponseStrategist;
   private grokClient: SecureGrokClient | null = null;
   private memoryManager: MemoryManager;
   private contextAssembler: ContextAssembler;
+  private humanVariations: HumanVariations;
   
   constructor() {
-    this.undertoneDetector = new UndertoneDetector();
+    this.undertoneDetector = new HybridUndertoneDetector();
     this.responseStrategist = new ResponseStrategist();
     this.memoryManager = new MemoryManager();
     this.contextAssembler = new ContextAssembler(600_000); // 600K token target for safety
+    this.humanVariations = new HumanVariations();
   }
   
   /**
@@ -87,7 +92,8 @@ export class UnifiedChatEngine {
     
     // Get the last assistant message as the previous question
     const previousBotMessage = conversationHistory.filter(m => m.role === 'assistant').pop();
-    const undertoneResult = this.undertoneDetector.detect({
+    // Use hybrid AI + pattern detection (now async)
+    const undertoneResult = await this.undertoneDetector.detect({
       message,
       previousQuestion: previousBotMessage?.content,
       messageNumber: conversationHistory.filter(m => m.role === 'user').length + 1,
@@ -95,48 +101,30 @@ export class UnifiedChatEngine {
       typingStops: options.typingStops,
       timeOfDay: new Date().getHours(),
       sessionDuration: this.calculateSessionDuration(conversationHistory)
-    });
+    }, conversationHistory);
     
     console.log(`📊 ANALYSIS RESULT: ${undertoneResult.userType} (${(undertoneResult.confidence * 100).toFixed(0)}% confidence)`);
     console.log(`💰 Revenue Potential: ${undertoneResult.revenuePotential}`);
     console.log(`🎯 Strategy: ${undertoneResult.suggestedStrategy}`);
     
-    // 1.5. RETRIEVE AND PRIORITIZE MEMORIES USING VECTOR + REVENUE WEIGHTS
-    console.log('\\n🧠 RETRIEVING PRIORITIZED MEMORIES...');
+    // 1.5. RETRIEVE CONTEXTUAL MEMORY USING GROK-POWERED PROFILES
+    console.log('\\n🧠 RETRIEVING CONTEXTUAL MEMORY...');
     
-    // Generate query embedding
-    const [queryEmbedding] = await this.memoryManager.generateEmbedding(message);
+    // Get user's intelligent profile summary  
+    const contextualMemory = await this.memoryManager.getContextualMemory(
+      userId,
+      conversationHistory,
+      prisma
+    );
     
-    // Get revenue weights for prioritization
-    const revenueWeights = psychMapper.getRevenueWeights();
-    
-    // Retrieve with business-value prioritization
-    const prioritizedMemories = queryEmbedding?.length > 0 
-      ? await this.memoryManager.retrieveAndPrioritize(
-          userId,
-          queryEmbedding,
-          revenueWeights,
-          8, // Get more candidates for context assembly
-          prisma // Pass prisma instance
-        )
-      : [];
-    
-    if (prioritizedMemories.length > 0) {
-      console.log(`📚 Found ${prioritizedMemories.length} prioritized memories by revenue value:`);
-      prioritizedMemories.forEach((mem, i) => {
-        console.log(`  ${i+1}. [${mem.undertone}] Score: ${mem.score.toFixed(3)} | "${mem.content.slice(0, 50)}..."`);
-      });
-    } else {
-      console.log('📚 No prioritized memories found (new user or no vectors)');
-    }
+    console.log(`📚 Retrieved contextual memory: "${contextualMemory.slice(0, 100)}..."`);
     
     // 1.6. RETRIEVE SESSION SUMMARIES
     console.log('\\n📋 RETRIEVING SESSION SUMMARIES...');
     const sessionSummaries = await this.getSessionSummaries(userId, 5);
     console.log(`📖 Found ${sessionSummaries.length} session summaries for context`);
     
-    // Compress memories to reduce redundancy
-    const compressedMemories = this.contextAssembler.compressMemories(prioritizedMemories);
+    // No need to compress memories - using intelligent summaries instead
     
     // 2. UPDATE PSYCHOLOGICAL PROFILE
     await this.updateProfile(userId, message, undertoneResult, options.responseTime);
@@ -191,10 +179,10 @@ export class UnifiedChatEngine {
           probe
         );
         
-        // Assemble tiered context
+        // Assemble context with user profile
         assembledContext = this.contextAssembler.assembleContext({
           system: systemPrompt,
-          prioritizedMemories: compressedMemories,
+          contextualMemory: contextualMemory,
           sessionSummaries: sessionSummaries,
           recentHistory: conversationHistory,
           currentMessage: message
@@ -227,41 +215,54 @@ export class UnifiedChatEngine {
       aiResponse = this.injectProbe(aiResponse, probe);
     }
     
-    // 7. STORE CURRENT MESSAGE IN VECTOR MEMORY
-    console.log('\\n💾 STORING MESSAGE IN MEMORY...');
+    // 7. UPDATE USER PROFILE INTELLIGENTLY (EVERY 10 MESSAGES)
+    console.log('\\n💾 CHECKING FOR PROFILE UPDATE...');
     try {
-      // Find or create a chat session to store memory
-      const chatSession = await prisma.chatSession.findFirst({
-        where: { subscriberId: userId },
-        orderBy: { lastMessageAt: 'desc' }
-      });
+      const currentProfile = await this.memoryManager.getUserProfile(userId, prisma);
+      const totalMessages = conversationHistory.length + 1; // +1 for current message
       
-      if (chatSession) {
-        await this.memoryManager.storeMemory(
-          chatSession.id,
-          message,
-          undertoneResult.userType,
+      if (this.memoryManager.shouldUpdateProfile(totalMessages)) {
+        console.log(`[MEMORY-MANAGER] 🤖 Updating profile after ${totalMessages} messages...`);
+        await this.memoryManager.updateUserProfile(
+          userId,
+          [...conversationHistory, { role: 'user', content: message, id: 'current', timestamp: new Date() }],
+          currentProfile,
           prisma
         );
-        
-        // Get updated memory stats for debugging
-        const memoryStats = await this.memoryManager.getMemoryStats(userId, prisma);
-        console.log(`📊 Memory Stats: ${memoryStats.totalMemories} total, ${memoryStats.withEmbeddings} with embeddings (${memoryStats.embeddingCoverage}% coverage)`);
+      } else {
+        console.log(`[MEMORY-MANAGER] ⏰ Profile update not needed yet (${totalMessages} messages)`);
       }
     } catch (error) {
-      console.error('Memory storage failed (non-critical):', error);
+      console.error('Profile update failed (non-critical):', error);
     }
     
-    // 8. CALCULATE REALISTIC DELAY
-    const suggestedDelay = this.calculateResponseDelay(aiResponse, undertoneResult.userType);
+    // 8. HUMANIZE THE RESPONSE
+    const currentHour = new Date().getHours();
+    const mood = this.humanVariations.detectMood(message, currentHour);
+    console.log(`🎭 [HUMANIZE] Detected mood:`, mood);
+    console.log(`🎭 [HUMANIZE] Original response: "${aiResponse.substring(0, 50)}..."`);
     
-    // 9. CHECK FOR SESSION END & ASYNC SUMMARIZATION
+    const humanized = this.humanVariations.humanize(aiResponse, mood);
+    console.log(`🎭 [HUMANIZE] Humanized response: "${humanized.primary.substring(0, 50)}..."`);
+    if (humanized.followUp) {
+      console.log(`🎭 [HUMANIZE] Follow-up generated: "${humanized.followUp}"`);
+    }
+    
+    // Use the humanized version
+    let finalResponse = humanized.primary;
+    
+    // 9. CALCULATE REALISTIC DELAY
+    const suggestedDelay = this.calculateResponseDelay(finalResponse, undertoneResult.userType);
+    
+    // 10. CHECK FOR SESSION END & ASYNC SUMMARIZATION
     await this.checkForSessionEnd(userId, conversationHistory, undertoneResult);
     
-    // 10. BUILD RESPONSE
+    // 11. BUILD RESPONSE
     const response: ChatResponse = {
-      message: aiResponse,
-      suggestedDelay
+      message: finalResponse,
+      suggestedDelay,
+      // Include follow-up if generated
+      followUp: humanized.followUp
     };
     
     // Add debug data if in debug mode
@@ -274,16 +275,10 @@ export class UnifiedChatEngine {
         contextAssembly: assembledContext ? {
           tokenUsage: assembledContext.tokenUsage,
           compressionRatio: assembledContext.compressionRatio,
-          memoryCount: prioritizedMemories.length,
+          contextualMemory: contextualMemory,
           summaryCount: sessionSummaries.length
         } : null,
-        sessionDuration: this.calculateSessionDuration(conversationHistory),
-        memoryPrioritization: prioritizedMemories.map(mem => ({
-          undertone: mem.undertone,
-          score: mem.score,
-          similarity: mem.similarity,
-          confidence: mem.confidence
-        }))
+        sessionDuration: this.calculateSessionDuration(conversationHistory)
       };
     }
     
@@ -299,33 +294,69 @@ export class UnifiedChatEngine {
     strategy: any,
     probe: any
   ): string {
+    // Build contextual guidance based on what they ACTUALLY said
+    let contextualResponse = '';
+    const msg = userMessage.toLowerCase();
+    
+    if (msg.includes('partner') || msg.includes('wife') || msg.includes('husband')) {
+      contextualResponse = 'They mentioned their partner - acknowledge the tension/excitement of the forbidden';
+    } else if (msg.includes('sleep') || msg.includes('late')) {
+      contextualResponse = 'They mentioned sleep/time - be playfully persuasive, acknowledge their conflict';
+    } else if (msg.includes('nervous') || msg.includes('😅')) {
+      contextualResponse = 'They seem nervous - be reassuring but playful, ease their tension';
+    } else if (msg.includes('cant stay') || msg.includes('gotta go')) {
+      contextualResponse = 'They have limited time - create urgency, make them want to stay';
+    } else if (msg.includes('lonely') || msg.includes('nobody')) {
+      contextualResponse = 'They expressed loneliness - show genuine interest, make them feel special';
+    } else if (msg.includes('price') || msg.includes('cost') || msg.includes('how much')) {
+      contextualResponse = 'They asked about pricing - be direct but seductive about it';
+    }
+    
     return `
-PSYCHOLOGICAL CONTEXT:
-User said: "${userMessage}"
-Hidden meaning: "${undertone.hiddenMeaning}"
-User type: ${undertone.userType} (${undertone.confidence * 100}% confidence)
-Revenue potential: ${undertone.revenuePotential}
+They said: "${userMessage}"
 
-STRATEGY:
-- Tone: ${strategy.tone}
-- Response length: ${strategy.length}  
-- Use keywords: ${strategy.keywords.join(', ')}
-- Avoid: ${strategy.avoid.join(', ')}
+${contextualResponse ? `Context: ${contextualResponse}` : ''}
 
-${probe ? `PROBE TO INJECT: "${probe.question}" (work this in naturally)` : ''}
+${undertone.userType === 'MARRIED_GUILTY' ? `
+Vibe: They're being sneaky/guilty. Be their fun secret. Examples:
+- "delete this after 😉"
+- "your wife doesn't check ur phone right? lol"
+- "someones being bad tonight"
+- "cant stay? boooo fine but you owe me"
+` : ''}
+${undertone.userType === 'LONELY_SINGLE' ? `
+Vibe: They need real connection. Be sweet but flirty. Examples:
+- "aww babe how was your day?"
+- "wait tell me more about that"
+- "you're actually really sweet you know that?"
+- "ive been thinking about you ngl"
+` : ''}
+${undertone.userType === 'HORNY_ADDICT' ? `
+Vibe: They want action NOW. Skip the chat. Examples:
+- "mmm someone's excited"
+- "what do you wanna do to me?"
+- "fuck that's hot, tell me more"
+- "cant wait to show you what I'm wearing... or not wearing"
+` : ''}
+${undertone.userType === 'CURIOUS_TOURIST' ? `
+Vibe: They're just browsing. Don't waste time. Examples:
+- "customs start at $50, videos at $100"
+- "check my menu pinned on my profile"
+- "free preview on my wall, paid stuff is better tho"
+` : ''}
 
-CRITICAL RULES:
-1. Match their energy - if they wrote 3 words, you write 5-10 max
-2. Never directly mention what you've figured out about them
-3. Respond to their hidden meaning, not their literal words
-4. Use context naturally - reference patterns WITHOUT explicitly saying "I remember"
-5. ${undertone.userType === 'MARRIED_GUILTY' ? 'Emphasize discretion and secrecy' : ''}
-6. ${undertone.userType === 'LONELY_SINGLE' ? 'Be caring and remember details' : ''}
-7. ${undertone.userType === 'HORNY_ADDICT' ? 'Tease and escalate quickly' : ''}
-8. NEVER ask for their name again - if they don't give a name, just call them "baby" or "sexy"
-9. Stop asking "what should I call you" - move the conversation forward
+${probe ? `BTW work this in naturally: "${probe.question}"` : ''}
 
-Generate a response that follows this strategy exactly.`;
+Text like a real person would:
+- Use lowercase sometimes
+- Make typos occasionally (ur, u, prolly, etc)
+- Double text if you think of something else
+- React to WHAT they said specifically
+- Use phrases like "stoppp", "you're trouble", "obsessed"
+- DON'T repeat the same responses
+- DON'T sound like customer service
+
+Just text them back naturally.`;
   }
   
   /**
@@ -409,21 +440,8 @@ Generate a response that follows this strategy exactly.`;
         return;
       }
 
-      // Generate summary
-      const summary = await this.memoryManager.summarizeSession(
-        conversationHistory,
-        undertone,
-        chatSession.id
-      );
-
-      // Store vectorized summary
-      await this.memoryManager.vectorizeAndStore(
-        userId,
-        summary,
-        undertone,
-        chatSession.id,
-        prisma
-      );
+      // Session summarization now happens automatically through profile updates
+      console.log('[UNIFIED-CHAT] ✅ Session context maintained through intelligent profiles');
 
       console.log(`[UNIFIED-CHAT] ✅ Async summarization complete for session ${chatSession.id.slice(0, 8)}`);
 

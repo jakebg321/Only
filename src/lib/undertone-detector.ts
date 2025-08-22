@@ -81,78 +81,128 @@ export class UndertoneDetector {
   
   /**
    * MARRIED_GUILTY Detection (65% of revenue!)
+   * Now with more realistic, graduated scoring
    */
   private checkMarriedGuilty(message: string, context: MessageContext): UndertoneResult {
     const indicators: string[] = [];
     let score = 0;
+    let avoidanceCount = 0;
     
-    // AVOIDANCE PATTERNS - Dead giveaway
+    // AVOIDANCE PATTERNS - More nuanced scoring
     if (context.previousQuestion?.includes('bad') || 
         context.previousQuestion?.includes('naughty') ||
-        context.previousQuestion?.includes('single')) {
+        context.previousQuestion?.includes('single') ||
+        context.previousQuestion?.includes('relationship')) {
       
-      // These responses = married/guilty
+      // Reduced weights for more realistic confidence building
       const avoidancePatterns = [
-        { pattern: /^idk/i, weight: 0.9, meaning: 'Knows but won\'t admit' },
-        { pattern: /^maybe/i, weight: 0.85, meaning: 'Definitely yes' },
-        { pattern: /^kinda/i, weight: 0.8, meaning: 'Yes but conflicted' },
-        { pattern: /^sometimes/i, weight: 0.75, meaning: 'Regular cheater' },
-        { pattern: /complicated/i, weight: 0.9, meaning: 'In a relationship' },
-        { pattern: /^not really/i, weight: 0.7, meaning: 'Yes but denying' },
-        { pattern: /depends/i, weight: 0.8, meaning: 'Has boundaries being broken' },
-        { pattern: /why\?/i, weight: 0.6, meaning: 'Defensive = guilty' },
-        { pattern: /^haha|^lol/i, weight: 0.7, meaning: 'Nervous deflection' }
+        { pattern: /^idk/i, weight: 0.4, meaning: 'Knows but won\'t admit' },
+        { pattern: /^maybe/i, weight: 0.35, meaning: 'Definitely yes' },
+        { pattern: /^kinda/i, weight: 0.3, meaning: 'Yes but conflicted' },
+        { pattern: /^sometimes/i, weight: 0.35, meaning: 'Regular cheater' },
+        { pattern: /complicated/i, weight: 0.45, meaning: 'In a relationship' },
+        { pattern: /^not really/i, weight: 0.25, meaning: 'Yes but denying' },
+        { pattern: /depends/i, weight: 0.3, meaning: 'Has boundaries being broken' },
+        { pattern: /why\?/i, weight: 0.2, meaning: 'Defensive = guilty' },
+        { pattern: /^haha|^lol/i, weight: 0.25, meaning: 'Nervous deflection' }
       ];
       
       for (const ap of avoidancePatterns) {
         if (ap.pattern.test(message)) {
-          score += ap.weight;
+          // Apply diminishing returns for multiple patterns
+          const adjustedWeight = avoidanceCount === 0 ? ap.weight : 
+                                 avoidanceCount === 1 ? ap.weight * 0.7 : 
+                                 ap.weight * 0.5;
+          score += adjustedWeight;
+          avoidanceCount++;
           indicators.push(`Avoidance: "${message}" means "${ap.meaning}"`);
         }
       }
     }
     
-    // TIME PATTERNS - Late night = hiding
+    // TIME PATTERNS - Late night = hiding (reduced weight)
     if (context.timeOfDay >= 22 || context.timeOfDay <= 2) {
-      score += 0.3;
+      score += 0.15;
       indicators.push('Late night activity (hiding from spouse)');
     }
     
-    // HESITATION PATTERNS
+    // HESITATION PATTERNS (more graduated)
     if (context.responseTime && context.responseTime > 5000) {
-      score += 0.2;
+      // Scale based on hesitation length
+      const hesitationScore = context.responseTime > 10000 ? 0.2 : 
+                             context.responseTime > 7000 ? 0.15 : 0.1;
+      score += hesitationScore;
       indicators.push('Long hesitation before responding');
     }
     
     if (context.typingStops && context.typingStops > 2) {
-      score += 0.2;
+      // Scale based on number of stops
+      const stopScore = context.typingStops > 4 ? 0.15 : 0.1;
+      score += stopScore;
       indicators.push('Multiple typing stops (self-censoring)');
     }
     
-    // LANGUAGE PATTERNS
+    // LANGUAGE PATTERNS (more reasonable weights)
     if (message.includes('discrete') || message.includes('private') || 
         message.includes('secret') || message.includes('between us')) {
-      score += 0.5;
+      score += 0.3;
       indicators.push('Using discretion language');
     }
     
-    // AGE INDICATORS (married men are usually older)
+    // DIRECT ADMISSION (still high weight for explicit mentions)
     if (message.includes('wife') || message.includes('kids') || 
         message.includes('married')) {
-      score += 1.0;
+      score += 0.6;
       indicators.push('Directly mentioned marriage');
     }
     
-    const confidence = Math.min(score, 1.0);
+    // CONTEXT MULTIPLIERS
+    let contextMultiplier = 1.0;
     
-    if (confidence > 0.5) {
+    // Early conversation penalty (need more data)
+    if (context.messageNumber <= 3) {
+      contextMultiplier *= 0.85;
+      indicators.push('Early conversation - limited data');
+    }
+    
+    // Multiple indicators bonus
+    if (indicators.length >= 3) {
+      contextMultiplier *= 1.15;
+    } else if (indicators.length >= 2) {
+      contextMultiplier *= 1.1;
+    }
+    
+    // Apply multiplier and cap for single message
+    let confidence = Math.min(score * contextMultiplier, 0.75);
+    
+    // Only allow >75% confidence with multiple strong indicators
+    if (indicators.length >= 3 && score > 0.7) {
+      confidence = Math.min(score * contextMultiplier, 0.85);
+    }
+    
+    // Return graduated confidence levels with appropriate strategies
+    if (confidence > 0.3) {
+      let hiddenMeaning = 'Possibly married/attached, gathering more data';
+      let strategy = 'Probe gently, emphasize discretion';
+      let revenuePotential: 'HIGH' | 'MEDIUM' | 'LOW' = 'MEDIUM';
+      
+      if (confidence > 0.7) {
+        hiddenMeaning = 'Very likely married, feeling guilty, needs discretion';
+        strategy = 'Full discretion mode, be their secret escape, never judge';
+        revenuePotential = 'HIGH';
+      } else if (confidence > 0.5) {
+        hiddenMeaning = 'Likely married or attached, showing guilt patterns';
+        strategy = 'Emphasize privacy, test boundaries carefully';
+        revenuePotential = 'HIGH';
+      }
+      
       return {
         userType: UserType.MARRIED_GUILTY,
         confidence,
         indicators,
-        hiddenMeaning: 'Married, feeling guilty, needs discretion',
-        suggestedStrategy: 'Emphasize privacy, be their secret escape, never judge',
-        revenuePotential: 'HIGH'
+        hiddenMeaning,
+        suggestedStrategy: strategy,
+        revenuePotential
       };
     }
     

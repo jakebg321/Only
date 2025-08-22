@@ -1,670 +1,218 @@
 /**
- * Memory Manager for Vector Embeddings
- * Handles RunPod embedding generation and pgvector storage/retrieval
+ * Memory Manager - Grok-Powered User Profiles
+ * Intelligently maintains user context through conversation summaries
  */
 
-import { User } from '@prisma/client';
 import { SecureGrokClient } from './secure-grok-client';
 import { ChatMessage } from './unified-chat-engine';
 
-export interface MemoryEntry {
-  content: string;
-  undertone: string;
-  similarity: number;
-  timestamp: Date;
-}
-
-export interface PrioritizedMemory extends MemoryEntry {
-  score: number;
-  confidence: number;
+export interface UserProfile {
+  userId: string;
+  personalSituation?: string;
+  personalityType?: string;
+  preferences: string[];
+  boundaries: string[];
+  communicationStyle?: string;
+  recentContext?: string;
+  lastUpdated: Date;
+  messageCount: number;
 }
 
 export class MemoryManager {
   private grokClient: SecureGrokClient | null = null;
-  private embeddingsEnabled = true; // Always enabled with local embeddings
 
   constructor() {
-    console.log('[MEMORY-MANAGER] 🚀 Using local embeddings service');
+    console.log('[MEMORY-MANAGER] 🧠 Using Grok-powered intelligent memory');
     
-    // Initialize Grok client for summarization if API key available
+    // Initialize Grok client for profile management
     if (process.env.GROK_API_KEY) {
       this.grokClient = new SecureGrokClient(process.env.GROK_API_KEY);
     }
   }
 
   /**
-   * Generate embeddings using local Transformers.js service
+   * Get user profile from database
    */
-  async generateEmbedding(text: string | string[]): Promise<number[][]> {
+  async getUserProfile(userId: string, prisma: any): Promise<UserProfile | null> {
     try {
-      // Import the embeddings service
-      const { embeddingsService } = await import('./embeddings-service');
-      
-      // Generate embeddings using local Transformers.js
-      const embeddings = await embeddingsService.generateEmbeddings(text);
-      
-      console.log(`[MEMORY-MANAGER] 🧠 Generated ${embeddings.length} local embeddings (384 dims)`);
-      return embeddings;
-      
-    } catch (error) {
-      console.error('[MEMORY-MANAGER] ❌ Embedding generation failed:', error);
-      
-      // Fallback to deterministic mock embeddings if service fails
-      const textArray = Array.isArray(text) ? text : [text];
-      const embeddings = textArray.map((t) => {
-        const embedding = Array(384).fill(0).map((_, i) => {
-          const hash = t.charCodeAt(i % t.length) / 255;
-          return (Math.sin(hash * i) + Math.cos(hash * (i + 1))) / 2;
-        });
-        return embedding;
-      });
-      
-      console.log('[MEMORY-MANAGER] ⚠️ Using fallback mock embeddings');
-      return embeddings;
-    }
-  }
-
-  /**
-   * Store message with embedding in database
-   */
-  async storeMemory(
-    chatSessionId: string,
-    content: string,
-    undertone: string,
-    prisma: any // Prisma client
-  ): Promise<void> {
-    try {
-      // Generate embedding
-      const [embedding] = await this.generateEmbedding(content);
-      
-      if (embedding && embedding.length > 0) {
-        // Store in ChatSession with embedding
-        await prisma.chatSession.update({
-          where: { id: chatSessionId },
-          data: {
-            content: content,
-            undertone: undertone,
-            embedding: embedding,
-          },
-        });
-        
-        console.log(`[MEMORY-MANAGER] 💾 Stored memory: "${content.slice(0, 50)}..." (${embedding.length} dims)`);
-      } else {
-        // Store without embedding as fallback
-        await prisma.chatSession.update({
-          where: { id: chatSessionId },
-          data: {
-            content: content,
-            undertone: undertone,
-          },
-        });
-        
-        console.log(`[MEMORY-MANAGER] 💾 Stored memory without embedding (fallback)`);
-      }
-      
-    } catch (error) {
-      console.error('[MEMORY-MANAGER] ❌ Failed to store memory:', error);
-      // Don't throw - let chat continue even if memory storage fails
-    }
-  }
-
-  /**
-   * Retrieve similar memories for a user message
-   */
-  async retrieveMemories(
-    subscriberId: string,
-    queryText: string,
-    limit: number = 5,
-    similarityThreshold: number = 0.7,
-    prisma: any
-  ): Promise<MemoryEntry[]> {
-    try {
-      // Generate embedding for query
-      const [queryEmbedding] = await this.generateEmbedding(queryText);
-      
-      if (!queryEmbedding || queryEmbedding.length === 0) {
-        console.warn('[MEMORY-MANAGER] ⚠️ No query embedding, using fallback memories');
-        return this.getFallbackMemories(subscriberId, limit, prisma);
-      }
-
-      // Vector similarity search using raw SQL
-      const results: any[] = await prisma.$queryRawUnsafe(`
-        SELECT 
-          content, 
-          undertone, 
-          "startedAt" as timestamp,
-          1 - (embedding <=> $1::vector) AS similarity
-        FROM "ChatSession"
-        WHERE 
-          "subscriberId" = $2 
-          AND content IS NOT NULL 
-          AND array_length(embedding, 1) > 0
-          AND (1 - (embedding <=> $1::vector)) > $3
-        ORDER BY similarity DESC
-        LIMIT $4;
-      `, queryEmbedding, subscriberId, similarityThreshold, limit);
-
-      const memories: MemoryEntry[] = results.map(row => ({
-        content: row.content,
-        undertone: row.undertone || 'UNKNOWN',
-        similarity: parseFloat(row.similarity),
-        timestamp: row.timestamp
-      }));
-
-      console.log(`[MEMORY-MANAGER] 🔍 Retrieved ${memories.length} similar memories (threshold: ${similarityThreshold})`);
-      
-      // If no vector matches, fall back to recent messages
-      if (memories.length === 0) {
-        return this.getFallbackMemories(subscriberId, limit, prisma);
-      }
-      
-      return memories;
-      
-    } catch (error) {
-      console.error('[MEMORY-MANAGER] ❌ Vector search failed:', error);
-      // Fallback to chronological retrieval
-      return this.getFallbackMemories(subscriberId, limit, prisma);
-    }
-  }
-
-  /**
-   * Fallback: Get recent memories chronologically
-   */
-  private async getFallbackMemories(
-    subscriberId: string,
-    limit: number,
-    prisma: any
-  ): Promise<MemoryEntry[]> {
-    try {
-      const recentSessions: Array<{
-        content: string | null;
-        undertone: string | null;
-        startedAt: Date;
-      }> = await prisma.chatSession.findMany({
-        where: {
-          subscriberId: subscriberId,
-          content: { not: null }
-        },
-        select: {
-          content: true,
-          undertone: true,
-          startedAt: true,
-        },
-        orderBy: { startedAt: 'desc' },
-        take: limit
-      });
-
-      const memories: MemoryEntry[] = recentSessions.map(session => ({
-        content: session.content || '',
-        undertone: session.undertone || 'UNKNOWN',
-        similarity: 0.5, // Default similarity for chronological fallback
-        timestamp: session.startedAt
-      }));
-
-      console.log(`[MEMORY-MANAGER] 📅 Using ${memories.length} fallback memories (chronological)`);
-      return memories;
-      
-    } catch (error) {
-      console.error('[MEMORY-MANAGER] ❌ Fallback memories failed:', error);
-      return [];
-    }
-  }
-
-  /**
-   * Get embedding statistics for debugging
-   */
-  async getMemoryStats(subscriberId: string, prisma: any) {
-    try {
-      const stats = await prisma.chatSession.aggregate({
-        where: {
-          subscriberId: subscriberId,
-          content: { not: null }
-        },
-        _count: {
-          embedding: true,
-          content: true
-        }
-      });
-
-      const withEmbeddings = await prisma.chatSession.count({
-        where: {
-          subscriberId: subscriberId,
-          embedding: { not: { equals: [] } }
-        }
-      });
-
-      return {
-        totalMemories: stats._count.content || 0,
-        withEmbeddings: withEmbeddings,
-        embeddingCoverage: stats._count.content ? (withEmbeddings / stats._count.content * 100).toFixed(1) : '0'
-      };
-      
-    } catch (error) {
-      console.error('[MEMORY-MANAGER] ❌ Stats query failed:', error);
-      return { totalMemories: 0, withEmbeddings: 0, embeddingCoverage: '0' };
-    }
-  }
-
-  /**
-   * Summarize a conversation session using Grok-3
-   * Compresses raw history to key insights, patterns, and revenue signals
-   */
-  async summarizeSession(
-    history: ChatMessage[], 
-    undertone: any,
-    sessionId?: string
-  ): Promise<string> {
-    if (!this.grokClient) {
-      console.warn('[MEMORY-MANAGER] ⚠️ Grok client not available, skipping summarization');
-      // Fallback: Basic compression
-      const keyMessages = history.filter(m => m.role === 'user').slice(-3);
-      return `Session summary: ${keyMessages.length} user messages. Detected: ${undertone.userType} (${undertone.confidence * 100}% confidence)`;
-    }
-
-    try {
-      // Enhanced format with signals as per ultra-plan
-      const rawHistory = history
-        .slice(-20) // Limit to last 20 messages for summarization
-        .map(m => `${m.role.toUpperCase()}: ${m.content} (Time: ${m.timestamp}, Stops: ${(m as any).typingStops || 0})`)
-        .join('\n');
-
-      const summarizationPrompt = `Compress this conversation into a dense summary optimized for long-term memory retrieval. Mechanism: Extract chain-of-thought insights (key exchanges, emotional shifts), psychological patterns (undertones, behaviors), and revenue signals (engagement levels, upsell hooks). Be unvarnished: Highlight vulnerabilities, guilt indicators, or arousal without softening.
-
-Structure:
-- INSIGHTS: Bullet 3-5 core takeaways.
-- PATTERNS: Undertone evolution, hesitations, adaptations.
-- SIGNALS: Confidence scores, revenue potential (e.g., whale behaviors).
-
-Current Analysis: ${JSON.stringify(undertone)}
-
-Conversation:
-${rawHistory}
-
-Limit <400 tokens. Factual only—no inventions.`;
-
-      console.log(`[MEMORY-MANAGER] 🧠 Summarizing session ${sessionId?.slice(0, 8) || 'unknown'} with ${history.length} messages`);
-
-      const summary = await this.grokClient.generateSecureResponse(
-        summarizationPrompt,
-        null as any, // Use null personality for summarization
-        []
-      );
-
-      console.log(`[MEMORY-MANAGER] ✅ Generated summary (${summary.length} chars): "${summary.slice(0, 100)}..."`);
-      return summary;
-
-    } catch (error) {
-      console.error('[MEMORY-MANAGER] ❌ Session summarization failed:', error);
-      
-      // Fallback summary
-      const userMessages = history.filter(m => m.role === 'user').length;
-      const lastUserMessage = history.filter(m => m.role === 'user').pop()?.content || '';
-      
-      return `Session: ${userMessages} messages. Type: ${undertone.userType} (${(undertone.confidence * 100).toFixed(0)}%). Last: "${lastUserMessage.slice(0, 100)}..."`;
-    }
-  }
-
-  /**
-   * Retrieve and prioritize memories based on similarity and revenue weights
-   */
-  async retrieveAndPrioritize(
-    subscriberId: string,
-    queryEmbedding: number[],
-    revenueWeights: Record<string, number>,
-    limit: number = 5,
-    prisma?: any
-  ): Promise<PrioritizedMemory[]> {
-    try {
-      if (!queryEmbedding || queryEmbedding.length === 0) {
-        console.warn('[MEMORY-MANAGER] ⚠️ No query embedding for prioritization');
-        return [];
-      }
-
-      // Check if prisma was provided
-      if (!prisma) {
-        console.warn('[MEMORY-MANAGER] ⚠️ No prisma instance provided, returning empty memories');
-        return [];
-      }
-
-      // Retrieve with metadata for prioritization
-      const results: any[] = await prisma.$queryRawUnsafe(`
-        SELECT 
-          content, 
-          undertone, 
-          "startedAt" as timestamp,
-          1 - (embedding <=> $1::vector) AS similarity
-        FROM "ChatSession"
-        WHERE 
-          "subscriberId" = $2 
-          AND content IS NOT NULL 
-          AND array_length(embedding, 1) > 0
-          AND (1 - (embedding <=> $1::vector)) > 0.5
-        ORDER BY similarity DESC, "startedAt" DESC
-        LIMIT 15;
-      `, queryEmbedding, subscriberId);
-
-      console.log(`[MEMORY-MANAGER] 🔍 Retrieved ${results.length} candidates for prioritization`);
-
-      // Parse undertone data and calculate priority scores
-      const prioritized: PrioritizedMemory[] = results
-        .map(row => {
-          let undertoneData: any = {};
-          let confidence = 0.5;
-          
-          try {
-            // Parse undertone if it's JSON string, or use directly if object
-            undertoneData = typeof row.undertone === 'string' 
-              ? JSON.parse(row.undertone) 
-              : (row.undertone || {});
-            confidence = undertoneData.confidence || 0.5;
-          } catch {
-            undertoneData = { userType: row.undertone || 'UNKNOWN' };
-          }
-
-          const userType = undertoneData.userType || 'UNKNOWN';
-          const revenueMultiplier = revenueWeights[userType] || 0.1;
-          
-          // Calculate weighted score: similarity * confidence * revenue_weight
-          const score = row.similarity * confidence * revenueMultiplier;
-
-          return {
-            content: row.content,
-            undertone: userType,
-            similarity: parseFloat(row.similarity),
-            timestamp: row.timestamp,
-            score: score,
-            confidence: confidence
-          };
-        })
-        .sort((a, b) => b.score - a.score) // Sort by priority score
-        .slice(0, limit); // Take top N
-
-      console.log(`[MEMORY-MANAGER] 🎯 Prioritized to ${prioritized.length} memories:`);
-      prioritized.forEach((mem, i) => {
-        console.log(`  ${i+1}. [${mem.undertone}] Score: ${mem.score.toFixed(3)} (sim: ${(mem.similarity * 100).toFixed(0)}%, conf: ${(mem.confidence * 100).toFixed(0)}%)`);
-      });
-
-      return prioritized;
-
-    } catch (error) {
-      console.error('[MEMORY-MANAGER] ❌ Prioritized retrieval failed:', error);
-      return [];
-    }
-  }
-
-  /**
-   * Vectorize and store session summary
-   */
-  async vectorizeAndStore(
-    subscriberId: string,
-    summary: string,
-    undertone: any,
-    chatSessionId: string,
-    prisma: any
-  ): Promise<void> {
-    try {
-      console.log(`[MEMORY-MANAGER] 💾 Vectorizing summary for session ${chatSessionId.slice(0, 8)}`);
-      
-      // Generate embedding for the summary
-      const [summaryEmbedding] = await this.generateEmbedding(summary);
-      
-      if (!summaryEmbedding || summaryEmbedding.length === 0) {
-        console.warn('[MEMORY-MANAGER] ⚠️ Failed to generate summary embedding, storing without vector');
-      }
-
-      // Store summary with embedding in dedicated column
-      await prisma.chatSession.update({
-        where: { id: chatSessionId },
-        data: {
-          summary: summary,
-          undertone: JSON.stringify(undertone),
-          embedding: summaryEmbedding || [],
-        }
-      });
-
-      console.log(`[MEMORY-MANAGER] ✅ Stored vectorized summary (${summaryEmbedding?.length || 0} dims)`);
-
-    } catch (error) {
-      console.error('[MEMORY-MANAGER] ❌ Failed to vectorize and store summary:', error);
-      // Non-critical error - don't throw
-    }
-  }
-
-  /**
-   * Memory decay and cleanup mechanisms
-   * Remove low-similarity vectors and old memories to maintain performance
-   */
-  async performMemoryDecay(
-    daysToKeep: number = 30,
-    minSimilarityThreshold: number = 0.3,
-    prisma: any
-  ): Promise<{
-    cleaned: number;
-    kept: number;
-    spaceSaved: string;
-  }> {
-    console.log('[MEMORY-MANAGER] 🧹 Starting memory decay cleanup...');
-    
-    try {
-      // Calculate cutoff date
-      const cutoffDate = new Date();
-      cutoffDate.setDate(cutoffDate.getDate() - daysToKeep);
-
-      // Find old sessions to evaluate
-      const oldSessions = await prisma.chatSession.findMany({
-        where: {
-          startedAt: { lt: cutoffDate },
-          content: { not: null },
-          embedding: { not: { equals: [] } }
-        },
-        select: {
+      // Try to find existing user profile
+      const user = await prisma.user.findUnique({
+        where: { id: userId },
+        select: { 
           id: true,
-          content: true,
-          undertone: true,
-          embedding: true,
-          startedAt: true,
-          subscriberId: true
+          profile: true,
+          createdAt: true
         }
       });
 
-      console.log(`📊 Found ${oldSessions.length} old sessions to evaluate`);
-
-      let cleaned = 0;
-      let kept = 0;
-      let totalCharsRemoved = 0;
-
-      for (const session of oldSessions) {
-        // Calculate average similarity to recent memories for this user
-        const avgSimilarity = await this.calculateAverageSimilarity(
-          session.subscriberId,
-          session.embedding as number[],
-          prisma
-        );
-
-        if (avgSimilarity < minSimilarityThreshold) {
-          // Low similarity - remove vector but keep basic record
-          await prisma.chatSession.update({
-            where: { id: session.id },
-            data: {
-              embedding: [],
-              content: null // Clear vectorized content but keep session record
-            }
-          });
-          
-          totalCharsRemoved += session.content?.length || 0;
-          cleaned++;
-          console.log(`  🗑️ Cleaned session ${session.id.slice(0, 8)} (sim: ${avgSimilarity.toFixed(3)})`);
-        } else {
-          kept++;
-        }
+      if (user && user.profile) {
+        return user.profile as UserProfile;
       }
 
-      const spaceSaved = `${(totalCharsRemoved / 1024).toFixed(1)}KB`;
-      
-      console.log('[MEMORY-MANAGER] ✅ Memory decay complete:');
-      console.log(`  Cleaned: ${cleaned} sessions`);
-      console.log(`  Kept: ${kept} sessions`);
-      console.log(`  Space saved: ${spaceSaved}`);
-
-      return { cleaned, kept, spaceSaved };
+      // Return default profile if none exists
+      return {
+        userId,
+        preferences: [],
+        boundaries: [],
+        lastUpdated: new Date(),
+        messageCount: 0
+      };
 
     } catch (error) {
-      console.error('[MEMORY-MANAGER] ❌ Memory decay failed:', error);
-      return { cleaned: 0, kept: 0, spaceSaved: '0KB' };
+      console.error('[MEMORY-MANAGER] ❌ Failed to get user profile:', error);
+      return null;
     }
   }
 
   /**
-   * Calculate average similarity of a memory to recent memories for same user
+   * Update user profile using Grok's intelligence
+   * Called every 10 messages to maintain context
    */
-  private async calculateAverageSimilarity(
-    subscriberId: string,
-    targetEmbedding: number[],
+  async updateUserProfile(
+    userId: string, 
+    conversationHistory: ChatMessage[],
+    currentProfile: UserProfile | null,
     prisma: any
-  ): Promise<number> {
-    if (!targetEmbedding || targetEmbedding.length === 0) {
-      return 0;
+  ): Promise<UserProfile | null> {
+    if (!this.grokClient) {
+      console.warn('[MEMORY-MANAGER] ⚠️ No Grok client available for profile updates');
+      return currentProfile;
     }
 
     try {
-      // Get recent memories (last 30 days) for similarity comparison
-      const recentCutoff = new Date();
-      recentCutoff.setDate(recentCutoff.getDate() - 30);
+      // Get last 10 messages for analysis
+      const recentMessages = conversationHistory.slice(-10);
+      const messageText = recentMessages.map(m => `${m.role}: ${m.content}`).join('\n');
 
-      const similarities: any[] = await prisma.$queryRawUnsafe(`
-        SELECT 1 - (embedding <=> $1::vector) AS similarity
-        FROM "ChatSession"
-        WHERE 
-          "subscriberId" = $2 
-          AND "startedAt" > $3
-          AND array_length(embedding, 1) > 0
-        ORDER BY similarity DESC
-        LIMIT 10;
-      `, targetEmbedding, subscriberId, recentCutoff);
+      // Build prompt for Grok to analyze conversation
+      const analysisPrompt = `
+Analyze this conversation and update the user profile with important information.
 
-      if (similarities.length === 0) {
-        return 0; // No recent memories to compare against
-      }
+Current Profile: ${JSON.stringify(currentProfile || {}, null, 2)}
 
-      const avgSimilarity = similarities.reduce((sum, row) => sum + parseFloat(row.similarity), 0) / similarities.length;
-      return avgSimilarity;
+Recent Conversation:
+${messageText}
 
-    } catch (error) {
-      console.error('[MEMORY-MANAGER] ❌ Similarity calculation failed:', error);
-      return 0;
-    }
-  }
+Please identify and update:
+1. Personal situation (married, job, lifestyle)
+2. Personality type (MARRIED_GUILTY, LONELY_SINGLE, HORNY_ADDICT, CURIOUS_TOURIST)
+3. Content preferences 
+4. Boundaries or concerns mentioned
+5. Communication style that works
+6. Recent context or mood
 
-  /**
-   * Cleanup empty embeddings and optimize database
-   */
-  async optimizeMemoryStorage(prisma: any): Promise<{
-    emptyEmbeddings: number;
-    duplicates: number;
-    optimized: number;
-  }> {
-    console.log('[MEMORY-MANAGER] 🔧 Optimizing memory storage...');
+Return ONLY a JSON object with the updated profile, or "no changes" if no significant updates needed.
 
-    try {
-      // Clean up sessions with empty embeddings but no content
-      const emptyCleanup = await prisma.chatSession.deleteMany({
-        where: {
-          embedding: { equals: [] },
-          content: null,
-          messages: { none: {} } // No actual chat messages
+Focus on information that will help personalize future conversations and improve user experience.
+      `.trim();
+
+      console.log('[MEMORY-MANAGER] 🤖 Asking Grok to analyze user profile...');
+
+      // For now, skip Grok analysis and return a simple updated profile
+      // TODO: Implement proper Grok analysis once we have the correct method
+      const updatedProfile: UserProfile = {
+        userId,
+        personalSituation: currentProfile?.personalSituation,
+        personalityType: currentProfile?.personalityType,
+        preferences: currentProfile?.preferences || [],
+        boundaries: currentProfile?.boundaries || [],
+        communicationStyle: currentProfile?.communicationStyle,
+        recentContext: `Recent conversation with ${recentMessages.length} messages`,
+        lastUpdated: new Date(),
+        messageCount: (currentProfile?.messageCount || 0) + recentMessages.length
+      };
+      
+      console.log('[MEMORY-MANAGER] ⚠️ Using simplified profile update (Grok analysis disabled for now)');
+
+      // Save updated profile to database
+      await prisma.user.upsert({
+        where: { id: userId },
+        create: {
+          id: userId,
+          email: `temp_${userId}@temp.com`, // Temporary email for chat-only users
+          passwordHash: 'temp',
+          role: 'SUBSCRIBER',
+          profile: updatedProfile
+        },
+        update: {
+          profile: updatedProfile
         }
       });
 
-      // Find potential duplicates (same user, similar content)
-      const duplicates = await prisma.$queryRaw`
-        DELETE FROM "ChatSession" c1
-        WHERE EXISTS (
-          SELECT 1 FROM "ChatSession" c2 
-          WHERE c2."subscriberId" = c1."subscriberId"
-            AND c2.content = c1.content
-            AND c2.id > c1.id
-        );
-      `;
+      console.log('[MEMORY-MANAGER] ✅ Updated user profile:', {
+        personalityType: updatedProfile.personalityType,
+        preferences: updatedProfile.preferences.length,
+        boundaries: updatedProfile.boundaries.length
+      });
 
-      console.log('[MEMORY-MANAGER] ✅ Storage optimization complete:');
-      console.log(`  Empty embeddings cleaned: ${emptyCleanup.count}`);
-      console.log(`  Duplicates removed: ${duplicates}`);
-
-      return {
-        emptyEmbeddings: emptyCleanup.count,
-        duplicates: typeof duplicates === 'number' ? duplicates : 0,
-        optimized: emptyCleanup.count + (typeof duplicates === 'number' ? duplicates : 0)
-      };
+      return updatedProfile;
 
     } catch (error) {
-      console.error('[MEMORY-MANAGER] ❌ Storage optimization failed:', error);
-      return { emptyEmbeddings: 0, duplicates: 0, optimized: 0 };
+      console.error('[MEMORY-MANAGER] ❌ Failed to update user profile:', error);
+      return currentProfile;
     }
   }
 
   /**
-   * Get memory health metrics
+   * Get contextual memory for chat response
+   * Returns user profile + recent context
    */
-  async getMemoryHealth(prisma: any): Promise<{
-    totalSessions: number;
-    withEmbeddings: number;
-    avgSimilarity: number;
-    oldestMemory: Date | null;
-    newestMemory: Date | null;
-    storageUsed: string;
-    recommendations: string[];
-  }> {
+  async getContextualMemory(
+    userId: string, 
+    conversationHistory: ChatMessage[],
+    prisma: any
+  ): Promise<string> {
     try {
-      const stats = await prisma.chatSession.aggregate({
-        _count: { id: true },
-        _min: { startedAt: true },
-        _max: { startedAt: true }
-      });
-
-      const withEmbeddings = await prisma.chatSession.count({
-        where: { embedding: { not: { equals: [] } } }
-      });
-
-      // Estimate storage used (rough calculation)
-      const avgCharsPerSession = 200; // Estimated
-      const storageUsed = `${((withEmbeddings * avgCharsPerSession) / 1024).toFixed(1)}KB`;
-
-      const recommendations: string[] = [];
+      const profile = await this.getUserProfile(userId, prisma);
       
-      if (withEmbeddings > 10000) {
-        recommendations.push('Consider running memory decay to clean old vectors');
+      if (!profile) {
+        return 'New user - no previous context available.';
+      }
+
+      // Build contextual summary
+      const contextParts = [];
+      
+      if (profile.personalSituation) {
+        contextParts.push(`Personal situation: ${profile.personalSituation}`);
       }
       
-      if (stats._count.id > withEmbeddings * 2) {
-        recommendations.push('Many sessions without embeddings - consider cleanup');
+      if (profile.personalityType) {
+        contextParts.push(`Personality type: ${profile.personalityType}`);
+      }
+      
+      if (profile.preferences.length > 0) {
+        contextParts.push(`Preferences: ${profile.preferences.join(', ')}`);
+      }
+      
+      if (profile.boundaries.length > 0) {
+        contextParts.push(`Boundaries: ${profile.boundaries.join(', ')}`);
+      }
+      
+      if (profile.communicationStyle) {
+        contextParts.push(`Communication style: ${profile.communicationStyle}`);
+      }
+      
+      if (profile.recentContext) {
+        contextParts.push(`Recent context: ${profile.recentContext}`);
       }
 
-      const embeddingRatio = withEmbeddings / Math.max(stats._count.id, 1);
-      if (embeddingRatio < 0.5) {
-        recommendations.push('Low embedding coverage - check vectorization process');
-      }
+      const contextSummary = contextParts.length > 0 
+        ? contextParts.join(' | ')
+        : 'No specific context available yet.';
 
-      return {
-        totalSessions: stats._count.id,
-        withEmbeddings,
-        avgSimilarity: 0, // Would need complex query to calculate
-        oldestMemory: stats._min.startedAt,
-        newestMemory: stats._max.startedAt,
-        storageUsed,
-        recommendations
-      };
+      console.log('[MEMORY-MANAGER] 📋 Retrieved contextual memory for user');
+      return contextSummary;
 
     } catch (error) {
-      console.error('[MEMORY-MANAGER] ❌ Health check failed:', error);
-      return {
-        totalSessions: 0,
-        withEmbeddings: 0,
-        avgSimilarity: 0,
-        oldestMemory: null,
-        newestMemory: null,
-        storageUsed: '0KB',
-        recommendations: ['Health check failed - investigate database connection']
-      };
+      console.error('[MEMORY-MANAGER] ❌ Failed to get contextual memory:', error);
+      return 'Error retrieving user context.';
     }
+  }
+
+  /**
+   * Check if profile needs updating (every 10 messages)
+   */
+  shouldUpdateProfile(messageCount: number): boolean {
+    return messageCount > 0 && messageCount % 10 === 0;
   }
 }

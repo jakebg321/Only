@@ -48,6 +48,7 @@ model User {
   isActive      Boolean     @default(true)
   createdAt     DateTime    @default(now())
   updatedAt     DateTime    @updatedAt
+  profile       Json?       // Grok-powered user profile and context
 
   creator       Creator?
   subscriber    Subscriber?
@@ -160,7 +161,6 @@ model ChatSession {
   lastMessageAt  DateTime    @default(now())
   isActive       Boolean     @default(true)
   totalMessages  Int         @default(0)
-  embedding      Float[]     @default([]) // Vector embedding for semantic search
   content        String?     @db.Text // Message content for embedding search
   summary        String?     @db.Text // Grok-3 generated session summary
   undertone      String?     // Detected user type (MARRIED_GUILTY, etc.)

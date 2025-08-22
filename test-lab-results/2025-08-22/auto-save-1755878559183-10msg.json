@@ -1,0 +1,28 @@
+{
+  "timestamp": "2025-08-22T12:02:34-04:00",
+  "conversations": [
+    {
+      "type": "window1",
+      "messages": [
+        {
+          "id": "test1",
+          "role": "user",
+          "content": "test message"
+        }
+      ],
+      "analysis": {
+        "userType": "MARRIED_GUILTY",
+        "confidence": 0.8
+      }
+    }
+  ],
+  "messageCount": 10,
+  "autoSave": true,
+  "metadata": {
+    "savedAt": "2025-08-22T16:02:39.183Z",
+    "saveType": "auto",
+    "messageCount": 10,
+    "filename": "auto-save-1755878559183-10msg.json",
+    "totalConversations": 1
+  }
+}

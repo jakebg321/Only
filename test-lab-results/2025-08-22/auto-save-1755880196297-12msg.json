@@ -1,0 +1,45 @@
+{
+  "timestamp": "2025-08-22T16:29:56.271Z",
+  "conversations": [
+    {
+      "type": "window1",
+      "messages": [
+        {
+          "id": "window1_init_1755880044794",
+          "role": "assistant",
+          "content": "Hey there... are you being bad tonight? 😈",
+          "timestamp": "2025-08-22T16:27:24.794Z"
+        }
+      ],
+      "analysis": null,
+      "character": "marcus"
+    },
+    {
+      "type": "window2",
+      "messages": [],
+      "analysis": null,
+      "character": "david"
+    },
+    {
+      "type": "window3",
+      "messages": [],
+      "analysis": null,
+      "character": "jake"
+    },
+    {
+      "type": "window4",
+      "messages": [],
+      "analysis": null,
+      "character": "tom"
+    }
+  ],
+  "messageCount": 12,
+  "autoSave": true,
+  "metadata": {
+    "savedAt": "2025-08-22T16:29:56.297Z",
+    "saveType": "auto",
+    "messageCount": 12,
+    "filename": "auto-save-1755880196297-12msg.json",
+    "totalConversations": 4
+  }
+}

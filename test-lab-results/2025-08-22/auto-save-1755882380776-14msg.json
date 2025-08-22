@@ -1,0 +1,38 @@
+{
+  "timestamp": "2025-08-22T17:06:20.744Z",
+  "conversations": [
+    {
+      "type": "window1",
+      "messages": [],
+      "analysis": null,
+      "character": "marcus"
+    },
+    {
+      "type": "window2",
+      "messages": [],
+      "analysis": null,
+      "character": "david"
+    },
+    {
+      "type": "window3",
+      "messages": [],
+      "analysis": null,
+      "character": "jake"
+    },
+    {
+      "type": "window4",
+      "messages": [],
+      "analysis": null,
+      "character": "tom"
+    }
+  ],
+  "messageCount": 14,
+  "autoSave": true,
+  "metadata": {
+    "savedAt": "2025-08-22T17:06:20.776Z",
+    "saveType": "auto",
+    "messageCount": 14,
+    "filename": "auto-save-1755882380776-14msg.json",
+    "totalConversations": 4
+  }
+}

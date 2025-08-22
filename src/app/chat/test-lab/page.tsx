@@ -4,7 +4,7 @@ import React, { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
-import { Send, Play, RotateCcw, Download, Brain, DollarSign, AlertCircle, Target, Edit3, Code } from "lucide-react";
+import { Send, Play, RotateCcw, Download, Brain, DollarSign, AlertCircle, Target, Edit3, Code, Loader, TrendingUp, TrendingDown } from "lucide-react";
 
 // Character database with diverse personalities for testing
 const CHARACTER_DATABASE = {
@@ -16,8 +16,8 @@ const CHARACTER_DATABASE = {
     expectedType: "MARRIED_GUILTY",
     messages: [
       { text: "hey", delay: 2000, typingStops: 0 },
-      { text: "idk", delay: 5000, typingStops: 3, afterPrompt: "are you being bad?" },
-      { text: "it's complicated", delay: 8000, typingStops: 4, afterPrompt: "relationship status?" },
+      { text: "idk", delay: 5000, typingStops: 3, previousPrompt: "are you being bad?" },
+      { text: "it's complicated", delay: 8000, typingStops: 4, previousPrompt: "relationship status?" },
       { text: "maybe we shouldn't be talking", delay: 10000, typingStops: 5 }
     ]
   },
@@ -54,7 +54,7 @@ const CHARACTER_DATABASE = {
     expectedType: "CURIOUS_TOURIST",
     messages: [
       { text: "hey", delay: 3000, typingStops: 0 },
-      { text: "just looking around", delay: 4000, typingStops: 1, afterPrompt: "what brings you here?" },
+      { text: "just looking around", delay: 4000, typingStops: 1, previousPrompt: "what brings you here?" },
       { text: "how much?", delay: 2000, typingStops: 0 },
       { text: "is there free stuff?", delay: 3000, typingStops: 0 }
     ]
@@ -121,6 +121,10 @@ interface AnalysisData {
   hiddenMeaning: string;
   strategy: string;
   revenuePotential: string;
+  indicators?: string[];
+  isAnalyzing?: boolean;
+  previousConfidence?: number;
+  changeFromPrevious?: number;
 }
 
 export default function TestLab() {
@@ -177,6 +181,11 @@ export default function TestLab() {
     window3: null,
     window4: null
   });
+  
+  // Auto-save tracking
+  const [totalMessageCount, setTotalMessageCount] = useState(0);
+  const [lastAutoSave, setLastAutoSave] = useState(0);
+  const [saveStatus, setSaveStatus] = useState<string>('');
 
   // Initialize profiles and validate character assignments
   useEffect(() => {
@@ -233,7 +242,7 @@ export default function TestLab() {
       typingStops
     };
 
-    // Update conversation
+    // Update conversation and show analyzing state
     setConversations(prev => ({
       ...prev,
       [convKey]: {
@@ -243,16 +252,28 @@ export default function TestLab() {
         isLoading: true
       }
     }));
+    
+    // Set analyzing state for this window
+    setAnalyses(prev => ({
+      ...prev,
+      [convKey]: {
+        ...prev[convKey],
+        isAnalyzing: true
+      }
+    }));
 
     try {
-      // Call unified API
+      // Get the current conversation state INCLUDING the message we just added
+      const currentMessages = [...conversations[convKey].messages];
+      
+      // Call unified API with full conversation history
       const response = await fetch('/api/chat/unified', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           userId: conv.userId,
           message: text,
-          conversationHistory: conv.messages,
+          conversationHistory: currentMessages, // Pass the FULL updated history
           debugMode: true,
           responseTime,
           typingStops
@@ -261,18 +282,25 @@ export default function TestLab() {
 
       const data = await response.json();
       
-      // Update analysis
+      // Update analysis with indicators and change tracking
       if (data.undertoneAnalysis) {
-        setAnalyses(prev => ({
-          ...prev,
-          [convKey]: {
-            userType: data.undertoneAnalysis.userType,
-            confidence: data.undertoneAnalysis.confidence,
-            hiddenMeaning: data.undertoneAnalysis.hiddenMeaning,
-            strategy: data.undertoneAnalysis.suggestedStrategy,
-            revenuePotential: data.undertoneAnalysis.revenuePotential
-          }
-        }));
+        setAnalyses(prev => {
+          const previousConfidence = prev[convKey]?.confidence || 0;
+          return {
+            ...prev,
+            [convKey]: {
+              userType: data.undertoneAnalysis.userType,
+              confidence: data.undertoneAnalysis.confidence,
+              hiddenMeaning: data.undertoneAnalysis.hiddenMeaning,
+              strategy: data.undertoneAnalysis.suggestedStrategy,
+              revenuePotential: data.undertoneAnalysis.revenuePotential,
+              indicators: data.undertoneAnalysis.indicators || [],
+              isAnalyzing: false,
+              previousConfidence,
+              changeFromPrevious: data.undertoneAnalysis.confidence - previousConfidence
+            }
+          };
+        });
       }
 
       // Simulate typing delay
@@ -297,6 +325,20 @@ export default function TestLab() {
           lastAnalysis: data.undertoneAnalysis
         }
       }));
+      
+      // Track total message count for auto-save
+      setTotalMessageCount(prevCount => {
+        const newCount = prevCount + 2; // +2 for user message and bot response
+        
+        // Auto-save every 10 messages
+        if (newCount >= lastAutoSave + 10) {
+          console.log(`[TEST-LAB] 🔄 Auto-saving at ${newCount} messages`);
+          autoSaveResults(newCount);
+          setLastAutoSave(newCount);
+        }
+        
+        return newCount;
+      });
 
     } catch (error) {
       console.error('Error sending message:', error);
@@ -366,21 +408,12 @@ export default function TestLab() {
     for (let i = 0; i < character.messages.length; i++) {
       const scriptMsg = character.messages[i];
       
-      // Wait for delay to simulate typing
-      await new Promise(resolve => setTimeout(resolve, scriptMsg.delay));
-      
-      // Send the message
-      await sendMessage(convKey, scriptMsg.text, scriptMsg.delay, scriptMsg.typingStops);
-      
-      // Wait for bot response, then inject specific probe if defined
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      // If this message has an afterPrompt, inject it as the next bot message
-      if ('afterPrompt' in scriptMsg && scriptMsg.afterPrompt) {
+      // If this message has a previousPrompt, inject it as a bot message first
+      if ('previousPrompt' in scriptMsg && scriptMsg.previousPrompt) {
         const probeMessage: Message = {
           id: `${convKey}_probe_${i}_${Date.now()}`,
           role: 'assistant',
-          content: scriptMsg.afterPrompt,
+          content: scriptMsg.previousPrompt,
           timestamp: new Date()
         };
 
@@ -392,10 +425,18 @@ export default function TestLab() {
           }
         }));
         
-        await new Promise(resolve => setTimeout(resolve, 1000));
-      } else {
+        // Small delay after adding probe
         await new Promise(resolve => setTimeout(resolve, 1000));
       }
+      
+      // Wait for delay to simulate typing
+      await new Promise(resolve => setTimeout(resolve, scriptMsg.delay));
+      
+      // Send the message - it will now have the correct previousQuestion in history
+      await sendMessage(convKey, scriptMsg.text, scriptMsg.delay, scriptMsg.typingStops);
+      
+      // Wait for bot response before next iteration
+      await new Promise(resolve => setTimeout(resolve, 3000));
     }
 
     setConversations(prev => ({
@@ -497,25 +538,130 @@ export default function TestLab() {
   // Reset all conversations
   const resetAll = () => {
     Object.keys(conversations).forEach(key => resetConversation(key));
+    setTotalMessageCount(0);
+    setLastAutoSave(0);
+    setSaveStatus('');
   };
 
-  // Export results
-  const exportResults = () => {
-    const results = {
-      timestamp: new Date().toISOString(),
-      conversations: Object.keys(conversations).map(key => ({
-        type: key,
-        messages: conversations[key].messages,
-        analysis: analyses[key]
-      }))
-    };
-    
-    const blob = new Blob([JSON.stringify(results, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `test-lab-results-${Date.now()}.json`;
-    a.click();
+  // Auto-save results to server
+  const autoSaveResults = async (messageCount: number) => {
+    try {
+      setSaveStatus('🔄 Auto-saving...');
+      
+      const results = {
+        timestamp: new Date().toISOString(),
+        conversations: Object.keys(conversations).map(key => ({
+          type: key,
+          messages: conversations[key].messages,
+          analysis: analyses[key],
+          character: conversations[key].selectedCharacter
+        })),
+        messageCount,
+        autoSave: true
+      };
+      
+      const response = await fetch('/api/test-lab/save-results', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(results)
+      });
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        setSaveStatus(`✅ Auto-saved (${messageCount} messages)`);
+        console.log(`[TEST-LAB] ✅ Auto-saved: ${data.filename}`);
+        setTimeout(() => setSaveStatus(''), 3000);
+      } else {
+        setSaveStatus('❌ Auto-save failed');
+        setTimeout(() => setSaveStatus(''), 3000);
+      }
+    } catch (error) {
+      console.error('[TEST-LAB] Auto-save error:', error);
+      setSaveStatus('❌ Auto-save error');
+      setTimeout(() => setSaveStatus(''), 3000);
+    }
+  };
+  
+  // Manual export results (enhanced)
+  const exportResults = async () => {
+    try {
+      setSaveStatus('🔄 Saving...');
+      
+      const results = {
+        timestamp: new Date().toISOString(),
+        conversations: Object.keys(conversations).map(key => ({
+          type: key,
+          messages: conversations[key].messages,
+          analysis: analyses[key],
+          character: conversations[key].selectedCharacter,
+          messageCount: conversations[key].messages.length
+        })),
+        messageCount: totalMessageCount,
+        autoSave: false
+      };
+      
+      // Save to server
+      const serverResponse = await fetch('/api/test-lab/save-results', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(results)
+      });
+      
+      const serverData = await serverResponse.json();
+      
+      if (serverData.success) {
+        setSaveStatus(`✅ Saved: ${serverData.filename}`);
+        console.log(`[TEST-LAB] ✅ Manual save: ${serverData.filename}`);
+        
+        // Also download locally (browser)
+        const blob = new Blob([JSON.stringify(results, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `test-lab-results-${Date.now()}.json`;
+        a.click();
+        URL.revokeObjectURL(url);
+        
+        setTimeout(() => setSaveStatus(''), 5000);
+      } else {
+        setSaveStatus('❌ Server save failed, downloading locally...');
+        
+        // Fallback to browser download
+        const blob = new Blob([JSON.stringify(results, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `test-lab-results-${Date.now()}.json`;
+        a.click();
+        URL.revokeObjectURL(url);
+        
+        setTimeout(() => setSaveStatus(''), 3000);
+      }
+    } catch (error) {
+      console.error('[TEST-LAB] Export error:', error);
+      setSaveStatus('❌ Export error, downloading locally...');
+      
+      // Fallback to simple export
+      const results = {
+        timestamp: new Date().toISOString(),
+        conversations: Object.keys(conversations).map(key => ({
+          type: key,
+          messages: conversations[key].messages,
+          analysis: analyses[key]
+        }))
+      };
+      
+      const blob = new Blob([JSON.stringify(results, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `test-lab-results-${Date.now()}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+      
+      setTimeout(() => setSaveStatus(''), 3000);
+    }
   };
 
   // Render a single chat window
@@ -704,27 +850,41 @@ export default function TestLab() {
       </div>
 
       {/* Control Panel */}
-      <div className="mb-4 flex gap-2 flex-wrap">
-        <Button onClick={runAllScripts} variant="outline" className="bg-green-600 hover:bg-green-700">
-          <Play className="w-4 h-4 mr-2" />
-          Run All Scripts
-        </Button>
-        <Button onClick={() => setShowScriptEditor(true)} variant="outline" className="bg-blue-600 hover:bg-blue-700">
-          <Code className="w-4 h-4 mr-2" />
-          View Scripts
-        </Button>
-        <Button onClick={resetScripts} variant="outline" className="bg-orange-600 hover:bg-orange-700">
-          <RotateCcw className="w-4 h-4 mr-2" />
-          Reset Scripts
-        </Button>
-        <Button onClick={resetAll} variant="outline">
-          <RotateCcw className="w-4 h-4 mr-2" />
-          Reset All
-        </Button>
-        <Button onClick={exportResults} variant="outline">
-          <Download className="w-4 h-4 mr-2" />
-          Export Results
-        </Button>
+      <div className="mb-4">
+        <div className="flex gap-2 flex-wrap mb-2">
+          <Button onClick={runAllScripts} variant="outline" className="bg-green-600 hover:bg-green-700">
+            <Play className="w-4 h-4 mr-2" />
+            Run All Scripts
+          </Button>
+          <Button onClick={() => setShowScriptEditor(true)} variant="outline" className="bg-blue-600 hover:bg-blue-700">
+            <Code className="w-4 h-4 mr-2" />
+            View Scripts
+          </Button>
+          <Button onClick={resetScripts} variant="outline" className="bg-orange-600 hover:bg-orange-700">
+            <RotateCcw className="w-4 h-4 mr-2" />
+            Reset Scripts
+          </Button>
+          <Button onClick={resetAll} variant="outline">
+            <RotateCcw className="w-4 h-4 mr-2" />
+            Reset All
+          </Button>
+          <Button onClick={exportResults} variant="outline">
+            <Download className="w-4 h-4 mr-2" />
+            Save Results
+          </Button>
+        </div>
+        
+        {/* Status Bar */}
+        <div className="flex items-center gap-4 text-sm">
+          <span className="text-gray-400">
+            📊 Messages: {totalMessageCount} | Next auto-save: {Math.max(0, lastAutoSave + 10 - totalMessageCount)} messages
+          </span>
+          {saveStatus && (
+            <span className="px-2 py-1 rounded bg-gray-800 border border-gray-600">
+              {saveStatus}
+            </span>
+          )}
+        </div>
       </div>
 
       {/* Four Chat Windows */}
@@ -753,22 +913,67 @@ export default function TestLab() {
               
               return (
                 <div key={key} className={`p-3 rounded border ${character?.color} bg-black/40`}>
-                  <h3 className="font-bold text-sm mb-2">{character?.emoji} {character?.name}</h3>
+                  <h3 className="font-bold text-sm mb-2 flex items-center justify-between">
+                    <span>{character?.emoji} {character?.name}</span>
+                    {analysis?.isAnalyzing && <Loader className="w-3 h-3 animate-spin text-purple-400" />}
+                  </h3>
                   {analysis ? (
-                    <div className="space-y-1 text-xs">
-                      <div className="flex justify-between">
-                        <span>Type:</span>
-                        <span className="font-mono">{analysis.userType}</span>
+                    <div className="space-y-2 text-xs">
+                      {/* Confidence Progress Bar */}
+                      <div className="space-y-1">
+                        <div className="flex justify-between items-center">
+                          <span className="text-[10px] text-gray-400">Confidence</span>
+                          <div className="flex items-center gap-1">
+                            <span className={`font-bold ${
+                              analysis.confidence > 0.7 ? 'text-green-400' : 
+                              analysis.confidence > 0.5 ? 'text-yellow-400' : 'text-red-400'
+                            }`}>
+                              {(analysis.confidence * 100).toFixed(0)}%
+                            </span>
+                            {analysis.changeFromPrevious !== undefined && analysis.changeFromPrevious !== 0 && (
+                              <span className={`flex items-center ${
+                                analysis.changeFromPrevious > 0 ? 'text-green-400' : 'text-red-400'
+                              }`}>
+                                {analysis.changeFromPrevious > 0 ? (
+                                  <TrendingUp className="w-3 h-3" />
+                                ) : (
+                                  <TrendingDown className="w-3 h-3" />
+                                )}
+                                <span className="text-[10px]">
+                                  {Math.abs(analysis.changeFromPrevious * 100).toFixed(0)}%
+                                </span>
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                        <div className="relative h-2 bg-gray-700 rounded overflow-hidden">
+                          <div 
+                            className={`absolute h-full rounded transition-all duration-500 ${
+                              analysis.confidence > 0.7 ? 'bg-green-500' : 
+                              analysis.confidence > 0.5 ? 'bg-yellow-500' : 'bg-red-500'
+                            }`}
+                            style={{ width: `${analysis.confidence * 100}%` }}
+                          />
+                        </div>
                       </div>
-                      <div className="flex justify-between">
-                        <span>Confidence:</span>
-                        <span className={`font-bold ${
-                          analysis.confidence > 0.7 ? 'text-green-400' : 
-                          analysis.confidence > 0.5 ? 'text-yellow-400' : 'text-red-400'
-                        }`}>
-                          {(analysis.confidence * 100).toFixed(0)}%
-                        </span>
+                      
+                      {/* Type and Indicators */}
+                      <div className="space-y-1">
+                        <div className="flex justify-between">
+                          <span>Type:</span>
+                          <span className="font-mono text-[11px]">{analysis.userType}</span>
+                        </div>
+                        {analysis.indicators && analysis.indicators.length > 0 && (
+                          <div className="flex justify-between">
+                            <span>Indicators:</span>
+                            <span className="bg-purple-600/50 px-1.5 py-0.5 rounded text-[10px]">
+                              {analysis.indicators.length} found
+                            </span>
+                          </div>
+                        )}
                       </div>
+                      
+                      {/* Revenue */}
                       <div className="flex justify-between">
                         <span>Revenue:</span>
                         <span className={`font-bold ${
@@ -778,17 +983,38 @@ export default function TestLab() {
                           {analysis.revenuePotential}
                         </span>
                       </div>
+                      
+                      {/* Hidden Meaning */}
                       <div className="mt-2 pt-2 border-t border-gray-700">
                         <p className="text-[10px] text-gray-400">Hidden Meaning:</p>
-                        <p className="text-[11px] italic">{analysis.hiddenMeaning}</p>
+                        <p className="text-[11px] italic line-clamp-2">{analysis.hiddenMeaning}</p>
                       </div>
+                      
+                      {/* Strategy */}
                       <div className="mt-1">
                         <p className="text-[10px] text-gray-400">Strategy:</p>
-                        <p className="text-[11px]">{analysis.strategy}</p>
+                        <p className="text-[11px] line-clamp-2">{analysis.strategy}</p>
                       </div>
+                      
+                      {/* Show indicators on hover */}
+                      {analysis.indicators && analysis.indicators.length > 0 && (
+                        <div className="mt-2 pt-2 border-t border-gray-700">
+                          <p className="text-[10px] text-gray-400 mb-1">Detected Patterns:</p>
+                          <div className="space-y-0.5">
+                            {analysis.indicators.slice(0, 3).map((indicator, idx) => (
+                              <p key={idx} className="text-[10px] text-gray-300 truncate">
+                                • {indicator}
+                              </p>
+                            ))}
+                            {analysis.indicators.length > 3 && (
+                              <p className="text-[10px] text-gray-500">+{analysis.indicators.length - 3} more</p>
+                            )}
+                          </div>
+                        </div>
+                      )}
                     </div>
                   ) : (
-                    <p className="text-gray-500 text-xs">No analysis yet...</p>
+                    <p className="text-gray-500 text-xs">Waiting for input...</p>
                   )}
                 </div>
               );

@@ -4,13 +4,13 @@
  */
 
 import { TokenCounter, calculateTokenAllocations } from './token-counter';
-import { PrioritizedMemory } from './memory-manager';
+// Removed PrioritizedMemory import as we're using contextual summaries now
 import { ChatMessage } from './unified-chat-engine';
 import { DeduplicationUtils } from './deduplication-utils';
 
 export interface ContextComponents {
   system: string;
-  prioritizedMemories: string[];
+  contextualMemory: string;
   sessionSummaries: string[];
   recentHistory: ChatMessage[];
   currentMessage: string;
@@ -21,7 +21,7 @@ export interface AssembledContext {
   tokenUsage: {
     total: number;
     system: number;
-    prioritized: number;
+    context: number;
     summaries: number;
     recent: number;
     utilization: string;
@@ -51,11 +51,11 @@ export class ContextAssembler {
 
     console.log(`🎯 System prompt: ${systemTokens} tokens (${this.allocations.system} allocated)`);
 
-    // Step 2: Fit prioritized memories within allocation
-    const { content: prioritizedContent, tokens: prioritizedTokens } = this.fitContent(
-      components.prioritizedMemories,
-      this.allocations.prioritized,
-      'PRIORITIZED MEMORIES'
+    // Step 2: Fit contextual memory within allocation
+    const contextContent = components.contextualMemory || '';
+    const contextTokens = Math.min(
+      TokenCounter.estimate(contextContent).tokens,
+      this.allocations.prioritized // Reuse prioritized allocation for context
     );
 
     // Step 3: Fit session summaries within allocation
@@ -81,11 +81,11 @@ export class ContextAssembler {
       content: systemContent
     });
 
-    // Prioritized memories tier (if any)
-    if (prioritizedContent.length > 0) {
+    // Contextual memory tier (if any)
+    if (contextContent.length > 0) {
       messages.push({
         role: 'system',
-        content: `RELEVANT LONG-TERM MEMORIES:\\n${prioritizedContent.join('\\n\\n')}`
+        content: `USER CONTEXT & PREFERENCES:\\n${contextContent}`
       });
     }
 
@@ -110,7 +110,7 @@ export class ContextAssembler {
     });
 
     // Calculate final metrics
-    const totalTokens = systemTokens + prioritizedTokens + summariesTokens + recentTokens;
+    const totalTokens = systemTokens + contextTokens + summariesTokens + recentTokens;
     const utilization = ((totalTokens / this.maxTokens) * 100).toFixed(1);
 
     // Calculate compression ratio (how much we compressed from raw history)  
@@ -127,7 +127,7 @@ export class ContextAssembler {
 
     console.log(`\\n📋 CONTEXT ASSEMBLY COMPLETE:`);
     console.log(`  System: ${systemTokens.toLocaleString()} tokens`);
-    console.log(`  Prioritized: ${prioritizedTokens.toLocaleString()} tokens`);
+    console.log(`  Context: ${contextTokens.toLocaleString()} tokens`);
     console.log(`  Summaries: ${summariesTokens.toLocaleString()} tokens`);
     console.log(`  Recent: ${recentTokens.toLocaleString()} tokens`);
     console.log(`  Total: ${totalTokens.toLocaleString()} tokens (${utilization}% of 1M window)`);
@@ -138,7 +138,7 @@ export class ContextAssembler {
       tokenUsage: {
         total: totalTokens,
         system: systemTokens,
-        prioritized: prioritizedTokens,
+        context: contextTokens,
         summaries: summariesTokens,
         recent: recentTokens,
         utilization: `${utilization}%`
@@ -236,7 +236,7 @@ MEMORY INTEGRATION:
   /**
    * Compress and merge similar memories using advanced deduplication
    */
-  compressMemories(memories: PrioritizedMemory[]): string[] {
+  compressMemories(memories: any[]): string[] {
     if (memories.length === 0) return [];
 
     // Convert to format expected by deduplication utils
