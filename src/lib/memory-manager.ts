@@ -20,11 +20,19 @@ export interface PrioritizedMemory extends MemoryEntry {
 }
 
 export class MemoryManager {
-  private runpodEndpoint = process.env.RUNPOD_ENDPOINT || 'https://api.runpod.io/v2/your-endpoint-id/runsync';
-  private runpodApiKey = process.env.RUNPOD_API_KEY!;
+  private runpodEndpoint = process.env.RUNPOD_ENDPOINT || '';
+  private runpodApiKey = process.env.RUNPOD_API_KEY || '';
   private grokClient: SecureGrokClient | null = null;
+  private embeddingsEnabled = false;
 
   constructor() {
+    // Check if RunPod is properly configured
+    this.embeddingsEnabled = !!(this.runpodApiKey && this.runpodEndpoint && !this.runpodEndpoint.includes('your-endpoint-id'));
+    
+    if (!this.embeddingsEnabled) {
+      console.log('[MEMORY-MANAGER] ⚠️ RunPod not configured - using mock embeddings. Add RUNPOD_API_KEY and RUNPOD_ENDPOINT to .env');
+    }
+    
     // Initialize Grok client for summarization if API key available
     if (process.env.GROK_API_KEY) {
       this.grokClient = new SecureGrokClient(process.env.GROK_API_KEY);
@@ -35,9 +43,17 @@ export class MemoryManager {
    * Generate embeddings using RunPod
    */
   async generateEmbedding(text: string | string[]): Promise<number[][]> {
-    if (!this.runpodApiKey) {
-      console.warn('RUNPOD_API_KEY not configured, skipping embedding');
-      return [];
+    if (!this.embeddingsEnabled) {
+      // Return mock embeddings for development/testing
+      const textArray = Array.isArray(text) ? text : [text];
+      return textArray.map((t) => {
+        // Generate deterministic 384-dim mock embedding
+        const mockEmbedding = Array(384).fill(0).map((_, i) => {
+          const hash = t.charCodeAt(i % t.length) / 255;
+          return (Math.sin(hash * i) + Math.cos(hash * (i + 1))) / 2;
+        });
+        return mockEmbedding;
+      });
     }
 
     try {
@@ -67,11 +83,17 @@ export class MemoryManager {
       return embeddings;
       
     } catch (error) {
-      console.error('[MEMORY-MANAGER] ❌ Embedding generation failed:', error);
+      console.error('[MEMORY-MANAGER] ❌ RunPod failed, using mock embeddings:', error);
       
-      // Return empty arrays as fallback - chat will continue without vectors
+      // Return mock embeddings as fallback
       const textArray = Array.isArray(text) ? text : [text];
-      return textArray.map(() => []);
+      return textArray.map((t) => {
+        const mockEmbedding = Array(384).fill(0).map((_, i) => {
+          const hash = t.charCodeAt(i % t.length) / 255;
+          return (Math.sin(hash * i) + Math.cos(hash * (i + 1))) / 2;
+        });
+        return mockEmbedding;
+      });
     }
   }
 

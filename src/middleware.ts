@@ -106,7 +106,7 @@ export async function middleware(request: NextRequest) {
   if (sessionData && !request.cookies.get('session_id')) {
     console.log(`[MIDDLEWARE-SESSION] 🍪 Setting new session cookie:`, sessionData.sessionId);
     response.cookies.set('session_id', sessionData.sessionId, {
-      httpOnly: true,
+      httpOnly: false, // Allow client-side access for analytics
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
       maxAge: 60 * 60 * 24 * 30 // 30 days

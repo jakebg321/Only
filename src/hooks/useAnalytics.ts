@@ -53,11 +53,12 @@ export function useAnalytics() {
     }
   }, []);
   
-  // Track single event immediately
+  // Track single event with retry logic
   const trackEvent = useCallback(async (
     eventType: string,
     eventData?: any,
-    immediate: boolean = false
+    immediate: boolean = false,
+    retryCount: number = 0
   ) => {
     const sessionId = getSessionId();
     const userId = getUserId();
@@ -72,7 +73,15 @@ export function useAnalytics() {
     });
     
     if (!sessionId) {
-      console.warn('[ANALYTICS] ⚠️ No session ID found, skipping event tracking');
+      // Retry up to 3 times with delay
+      if (retryCount < 3) {
+        console.log(`[ANALYTICS] ⏳ No session yet, retrying in 500ms (attempt ${retryCount + 1}/3)`);
+        setTimeout(() => {
+          trackEvent(eventType, eventData, immediate, retryCount + 1);
+        }, 500);
+        return;
+      }
+      console.warn('[ANALYTICS] ⚠️ No session after 3 retries, dropping event');
       return;
     }
     

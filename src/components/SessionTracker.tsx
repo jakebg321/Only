@@ -42,25 +42,25 @@ export function SessionTracker() {
     // Send session tracking data on page load
     const trackSession = async () => {
       if (hasTracked) return;
-      hasTracked = true;
       
-      // Small delay to ensure cookies are set
-      await new Promise(resolve => setTimeout(resolve, 100));
+      // Small delay to ensure middleware has set cookies
+      await new Promise(resolve => setTimeout(resolve, 200));
       try {
-        // Get or create session ID
-        let sessionId = document.cookie
+        // Only read session ID - middleware creates it
+        const sessionId = document.cookie
           .split('; ')
           .find(row => row.startsWith('session_id='))
           ?.split('=')[1];
         
-        // Create new session ID if none exists
         if (!sessionId) {
-          sessionId = `sess_${Date.now()}_${Math.random().toString(36).substring(2, 15)}`;
-          document.cookie = `session_id=${sessionId}; path=/; max-age=${60 * 60 * 24 * 30}`;
-          console.log('[SESSION-TRACKER] 🆕 Created new session:', sessionId);
-        } else {
-          console.log('[SESSION-TRACKER] 📍 Using existing session:', sessionId);
+          console.log('[SESSION-TRACKER] ⏳ Waiting for middleware to create session...');
+          // Wait a bit and retry
+          setTimeout(() => trackSession(), 500);
+          return;
         }
+        
+        console.log('[SESSION-TRACKER] 📍 Using middleware session:', sessionId);
+        hasTracked = true; // Mark as tracked to prevent duplicates
         
         const userId = document.cookie
           .split('; ')

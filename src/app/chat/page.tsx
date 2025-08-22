@@ -64,8 +64,10 @@ function ChatComponent() {
       timestamp: new Date()
     }]);
     
-    // Track session start
-    trackUserEvent(userId, 'message_sent', { sessionStart: true });
+    // Delay session start tracking to ensure session exists
+    setTimeout(() => {
+      trackUserEvent(userId, 'message_sent', { sessionStart: true });
+    }, 1000);
   }, []);
 
   // Show loading spinner while checking authentication
