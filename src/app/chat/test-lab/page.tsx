@@ -128,6 +128,7 @@ export default function TestLab() {
   const [showScriptEditor, setShowScriptEditor] = useState(false);
   const [editingScript, setEditingScript] = useState<string | null>(null);
   const [customScripts, setCustomScripts] = useState(TEST_SCRIPTS);
+  const [isInitialized, setIsInitialized] = useState(false);
   
   // Four separate conversation states with character selection
   const [conversations, setConversations] = useState<Record<string, ConversationState>>({
@@ -177,9 +178,42 @@ export default function TestLab() {
     window4: null
   });
 
-  // Initialize profiles - Not needed, unified API handles everything
+  // Initialize profiles and validate character assignments
   useEffect(() => {
     console.log('Test lab loaded - ready to test psychological profiling');
+    
+    // Validate and fix any missing character assignments
+    setConversations(prev => {
+      const updated = { ...prev };
+      let needsUpdate = false;
+      
+      Object.keys(updated).forEach(windowKey => {
+        const selectedChar = updated[windowKey].selectedCharacter;
+        if (!selectedChar || !CHARACTER_DATABASE[selectedChar as keyof typeof CHARACTER_DATABASE]) {
+          console.log(`Fixing missing character for ${windowKey}`);
+          // Assign default characters based on window
+          const defaultCharacters = {
+            window1: 'marcus',
+            window2: 'david', 
+            window3: 'jake',
+            window4: 'tom'
+          };
+          updated[windowKey].selectedCharacter = defaultCharacters[windowKey as keyof typeof defaultCharacters] || 'marcus';
+          needsUpdate = true;
+        }
+      });
+      
+      if (needsUpdate) {
+        console.log('Updated character assignments:', updated);
+      }
+      
+      // Mark as initialized after validation
+      setTimeout(() => {
+        setIsInitialized(true);
+      }, 200);
+      
+      return needsUpdate ? updated : prev;
+    });
   }, []);
 
   // Send message for a specific conversation
@@ -189,9 +223,9 @@ export default function TestLab() {
 
     const text = messageText || conv.input;
     
-    // Add user message
+    // Add user message with unique ID
     const userMessage: Message = {
-      id: Date.now().toString(),
+      id: `${convKey}_user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
       role: 'user',
       content: text,
       timestamp: new Date(),
@@ -245,9 +279,9 @@ export default function TestLab() {
       const delay = data.suggestedDelay || 2000;
       await new Promise(resolve => setTimeout(resolve, delay));
 
-      // Add bot message
+      // Add bot message with unique ID
       const botMessage: Message = {
-        id: (Date.now() + 1).toString(),
+        id: `${convKey}_bot_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
         role: 'assistant',
         content: data.message,
         timestamp: new Date(),
@@ -258,7 +292,7 @@ export default function TestLab() {
         ...prev,
         [convKey]: {
           ...prev[convKey],
-          messages: [...prev[convKey].messages, botMessage],
+          messages: deduplicateMessages([...prev[convKey].messages, botMessage]),
           isLoading: false,
           lastAnalysis: data.undertoneAnalysis
         }
@@ -281,6 +315,12 @@ export default function TestLab() {
     const conv = conversations[convKey];
     const character = CHARACTER_DATABASE[conv.selectedCharacter as keyof typeof CHARACTER_DATABASE];
     if (!character) return;
+
+    // Prevent multiple scripts running simultaneously on same window
+    if (conv.isRunningScript) {
+      console.log(`Script already running for ${convKey}, skipping`);
+      return;
+    }
 
     // Reset conversation
     await resetConversation(convKey);
@@ -308,7 +348,7 @@ export default function TestLab() {
     }
 
     const initMessage: Message = {
-      id: 'init',
+      id: `${convKey}_init_${Date.now()}`,
       role: 'assistant',
       content: initContent,
       timestamp: new Date()
@@ -336,9 +376,9 @@ export default function TestLab() {
       await new Promise(resolve => setTimeout(resolve, 2000));
       
       // If this message has an afterPrompt, inject it as the next bot message
-      if (scriptMsg.afterPrompt) {
+      if ('afterPrompt' in scriptMsg && scriptMsg.afterPrompt) {
         const probeMessage: Message = {
-          id: `probe_${i}`,
+          id: `${convKey}_probe_${i}_${Date.now()}`,
           role: 'assistant',
           content: scriptMsg.afterPrompt,
           timestamp: new Date()
@@ -348,7 +388,7 @@ export default function TestLab() {
           ...prev,
           [convKey]: {
             ...prev[convKey],
-            messages: [...prev[convKey].messages, probeMessage]
+            messages: deduplicateMessages([...prev[convKey].messages, probeMessage])
           }
         }));
         
@@ -362,7 +402,8 @@ export default function TestLab() {
       ...prev,
       [convKey]: {
         ...prev[convKey],
-        isRunningScript: false
+        isRunningScript: false,
+        scriptIndex: 0 // Reset script index
       }
     }));
   };
@@ -370,14 +411,16 @@ export default function TestLab() {
   // Reset a conversation
   const resetConversation = async (convKey: string) => {
     const newUserId = `test_${convKey}_${Date.now()}`;
+    const conv = conversations[convKey];
     
     setConversations(prev => ({
       ...prev,
       [convKey]: {
-        messages: [],
+        messages: [], // Clear all messages to prevent duplicates
         input: "",
         isLoading: false,
         userId: newUserId,
+        selectedCharacter: conv?.selectedCharacter || 'marcus', // Preserve character selection
         scriptIndex: 0,
         isRunningScript: false
       }
@@ -395,6 +438,19 @@ export default function TestLab() {
     await Promise.all(promises);
   };
   
+  // Utility to deduplicate messages by ID
+  const deduplicateMessages = (messages: Message[]): Message[] => {
+    const seen = new Set<string>();
+    return messages.filter(msg => {
+      if (seen.has(msg.id)) {
+        console.log(`Removing duplicate message: ${msg.id}`);
+        return false;
+      }
+      seen.add(msg.id);
+      return true;
+    });
+  };
+
   // Change character for a window
   const changeCharacter = (windowKey: string, characterKey: string) => {
     setConversations(prev => ({
@@ -465,8 +521,61 @@ export default function TestLab() {
   // Render a single chat window
   const renderChatWindow = (convKey: string) => {
     const conv = conversations[convKey];
-    const character = CHARACTER_DATABASE[conv.selectedCharacter as keyof typeof CHARACTER_DATABASE];
+    
+    // Early return if conversation doesn't exist
+    if (!conv) {
+      return (
+        <Card className="h-[550px] border-gray-500 border-2 bg-black/40">
+          <CardHeader>
+            <CardTitle className="text-sm text-red-400">Loading conversation...</CardTitle>
+          </CardHeader>
+        </Card>
+      );
+    }
+    
+    // Validate and get character
+    const selectedChar = conv.selectedCharacter;
+    const character = CHARACTER_DATABASE[selectedChar as keyof typeof CHARACTER_DATABASE];
     const analysis = analyses[convKey];
+    
+    // Debug logging
+    console.log(`Rendering window ${convKey}:`, {
+      conv: conv,
+      selectedCharacter: selectedChar,
+      character: character,
+      characterExists: !!character
+    });
+    
+    // If no character selected or character doesn't exist, show loading/error
+    if (!selectedChar || !character) {
+      // Try to auto-fix by assigning default character
+      const defaultCharacters = {
+        window1: 'marcus',
+        window2: 'david', 
+        window3: 'jake',
+        window4: 'tom'
+      };
+      
+      const defaultChar = defaultCharacters[convKey as keyof typeof defaultCharacters] || 'marcus';
+      
+      // Auto-fix the character assignment
+      setTimeout(() => {
+        changeCharacter(convKey, defaultChar);
+      }, 100);
+      
+      return (
+        <Card className="h-[550px] border-yellow-500 border-2 bg-black/40">
+          <CardHeader>
+            <CardTitle className="text-sm text-yellow-400">
+              Loading character... {!selectedChar ? '(no character selected)' : '(character not found)'}
+            </CardTitle>
+            <p className="text-xs text-gray-400">
+              Window: {convKey}, Selected: "{selectedChar || 'undefined'}", Auto-fixing to: {defaultChar}
+            </p>
+          </CardHeader>
+        </Card>
+      );
+    }
     
     return (
       <Card className={`h-[550px] ${character.color} border-2 bg-black/40`}>
@@ -569,6 +678,19 @@ export default function TestLab() {
       </Card>
     );
   };
+
+  // Show loading state until initialization is complete
+  if (!isInitialized) {
+    return (
+      <div className="min-h-screen bg-gray-900 p-4 flex items-center justify-center">
+        <div className="text-center">
+          <Brain className="w-12 h-12 text-purple-400 animate-pulse mx-auto mb-4" />
+          <h2 className="text-xl text-white mb-2">Initializing Test Lab...</h2>
+          <p className="text-gray-400">Setting up character assignments and validation</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-900 p-4">

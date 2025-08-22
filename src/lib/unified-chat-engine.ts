@@ -8,6 +8,7 @@ import { UndertoneDetector, UserType } from './undertone-detector';
 import { ResponseStrategist } from './response-strategist';
 import { databaseProfiler } from './database-profiler';
 import { SecureGrokClient } from './secure-grok-client';
+import { psychMapper } from './psychological-mapper';
 
 export interface ChatMessage {
   id: string;
@@ -96,7 +97,33 @@ export class UnifiedChatEngine {
     await this.updateProfile(userId, message, undertoneResult, options.responseTime);
     
     // 3. CHECK FOR PROBE OPPORTUNITY
-    const probe = await this.getProbeIfNeeded(userId, conversationHistory.length);
+    const probe = await this.getProbeIfNeeded(
+      userId, 
+      conversationHistory.length,
+      undertoneResult.userType
+    );
+    
+    // If we have a probe response in the message, analyze it
+    const lastProbe = conversationHistory
+      .filter(m => m.probeId)
+      .pop();
+    
+    if (lastProbe && conversationHistory[conversationHistory.length - 1]?.role === 'user') {
+      // User just responded to a probe, analyze it
+      const probeAnalysis = psychMapper.analyzeProbeResponse(
+        lastProbe.probeId || '',
+        message,
+        undertoneResult.userType
+      );
+      
+      // Update confidence if probe analysis is more certain
+      if (probeAnalysis.confidence > undertoneResult.confidence) {
+        undertoneResult.userType = probeAnalysis.refinedType;
+        undertoneResult.confidence = probeAnalysis.confidence;
+        console.log(`🎯 PROBE REFINED TYPE: ${probeAnalysis.refinedType} (${(probeAnalysis.confidence * 100).toFixed(0)}%)`);
+        console.log(`   Insights: ${probeAnalysis.insights.join(', ')}`);
+      }
+    }
     
     // 4. GET RESPONSE STRATEGY
     const strategy = this.responseStrategist.getStrategy(
@@ -231,16 +258,45 @@ Generate a response that follows this strategy exactly.`;
   }
   
   /**
-   * Get probe if it's the right time
+   * Get probe if it's the right time based on user type
    */
-  private async getProbeIfNeeded(userId: string, messageCount: number) {
+  private async getProbeIfNeeded(
+    userId: string, 
+    messageCount: number,
+    userType: UserType
+  ) {
+    // Get probe strategy for this user type
+    const profile = psychMapper.getCompleteProfile(userType);
+    
+    // Don't probe tourists
+    if (userType === UserType.CURIOUS_TOURIST) return null;
+    
     // Only probe after building some rapport
     if (messageCount < 3) return null;
     
-    // Don't probe too often
-    if (Math.random() > 0.3) return null;
+    // Check if we should probe based on user type
+    const shouldProbe = {
+      [UserType.MARRIED_GUILTY]: messageCount >= 3 && messageCount <= 15,
+      [UserType.LONELY_SINGLE]: messageCount >= 5 && messageCount <= 20,
+      [UserType.HORNY_ADDICT]: false, // Don't probe addicts
+      [UserType.CURIOUS_TOURIST]: false, // Don't probe tourists
+      [UserType.UNKNOWN]: messageCount >= 2 // Probe early to identify
+    };
     
-    return await databaseProfiler.getNextProbe(userId, messageCount);
+    if (!shouldProbe[userType]) return null;
+    
+    // 40% chance to probe when conditions are met
+    if (Math.random() > 0.4) return null;
+    
+    // Get a probe that matches this user's profile
+    const probe = await databaseProfiler.getNextProbe(userId, messageCount);
+    
+    // Filter probe based on strategy
+    if (probe && profile.probeStrategy.avoidProbes.includes(probe.id)) {
+      return null; // Skip probes we should avoid for this type
+    }
+    
+    return probe;
   }
   
   /**

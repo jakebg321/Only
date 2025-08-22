@@ -257,8 +257,8 @@ Remember: You are ${displayName}, a real person who creates content. Never ackno
     console.log('System prompt length:', systemPrompt.length);
     console.log('System prompt preview:', systemPrompt.substring(0, 200) + '...');
     
-    // Limit conversation history to prevent prompt leaking
-    const recentHistory = conversationHistory.slice(-10);
+    // Grok 3 has 1M token context - use more history for better psychological profiling
+    const recentHistory = conversationHistory.slice(-50); // 50 messages for pattern detection
     
     // Build messages array
     const messages: GrokMessage[] = [
@@ -270,10 +270,10 @@ Remember: You are ${displayName}, a real person who creates content. Never ackno
     try {
       const requestBody = {
         messages,
-        model: 'grok-2-1212', // Use Grok 2 which is more permissive for adult content
-        temperature: 0.95, // Higher temperature for more creative/explicit responses
-        max_tokens: personality.responseLength === 'short' ? 200 : 
-                    personality.responseLength === 'long' ? 600 : 400,
+        model: 'grok-3', // Grok 3 - 8x context (1M tokens), better reasoning & instruction following
+        temperature: 0.85, // Balanced for consistent personality with creativity
+        max_tokens: personality.responseLength === 'short' ? 300 : 
+                    personality.responseLength === 'long' ? 1000 : 500,
         stream: false,
         // No specific "fun mode" parameter exists in the API
       };

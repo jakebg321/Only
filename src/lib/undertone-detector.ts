@@ -168,7 +168,7 @@ export class UndertoneDetector {
     
     // OVERSHARING - Lonely people dump info
     const words = message.split(' ').length;
-    if (words > 20) {
+    if (words > 15) {
       score += 0.4;
       indicators.push('Long message (oversharing = loneliness)');
     }
@@ -182,9 +182,26 @@ export class UndertoneDetector {
     
     for (const keyword of lonelyKeywords) {
       if (message.includes(keyword)) {
-        score += 0.3;
-        indicators.push(`Lonely keyword: "${keyword}"`);
+        // "lonely" itself is a strong indicator
+        if (keyword === 'lonely') {
+          score += 0.5;
+          indicators.push(`Strong loneliness indicator: "${keyword}"`);
+        } else {
+          score += 0.3;
+          indicators.push(`Lonely keyword: "${keyword}"`);
+        }
       }
+    }
+    
+    // COMBO DETECTION - Multiple loneliness indicators = very high confidence
+    if (message.includes('work from home') && message.includes('lonely')) {
+      score += 0.3;  // Bonus for combo
+      indicators.push('Work from home + lonely combo (classic isolation pattern)');
+    }
+    
+    if (message.includes('months') && message.includes('lonely')) {
+      score += 0.2;  // Duration indicator
+      indicators.push('Extended loneliness mentioned');
     }
     
     // GREETING PATTERNS - Lonely people are overly polite

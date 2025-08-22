@@ -12,6 +12,7 @@ import { Label } from "@/components/ui/label";
 import { trackUserEvent } from "@/lib/user-analytics";
 import ContentDropOffer from "@/components/ContentDropOffer";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { useChatAnalytics } from "@/hooks/useAnalytics";
 
 type ChatMode = 'welcome' | 'personalize' | 'chat';
 
@@ -99,6 +100,7 @@ const PRESET_PERSONALITIES = {
 
 function ChatComponent() {
   const { user, isAuthenticated, isLoading: authLoading } = useAuth();
+  const { trackMessage, trackTyping, trackPersonalityDetection, trackProbeResponse } = useChatAnalytics();
   const [mode, setMode] = useState<ChatMode>('welcome');
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
@@ -109,6 +111,8 @@ function ChatComponent() {
   const [customPersonalities, setCustomPersonalities] = useState<any[]>([]);
   const [awaitingImageDescription, setAwaitingImageDescription] = useState(false);
   const [imageRequestType, setImageRequestType] = useState<'image' | 'video'>('image');
+  const [detectedPersonality, setDetectedPersonality] = useState<string | null>(null);
+  const [personalityConfidence, setPersonalityConfidence] = useState<number>(0);
   
   // Preference tracking state
   const userId = user?.id || 'anonymous'; // Use authenticated user ID
@@ -420,12 +424,17 @@ function ChatComponent() {
     let typingDuration = 0;
     if (typingStartTime) {
       typingDuration = new Date().getTime() - typingStartTime.getTime();
+      // Track typing stop with duration
+      trackTyping('stop', typingDuration);
       // Reset typing tracking
       setTypingStartTime(null);
       setTypingStops(0);
     }
     
-    // Track message event
+    // Track message event with new analytics
+    trackMessage(input, detectedPersonality || undefined, personalityConfidence);
+    
+    // Also track with old system for backward compatibility
     trackUserEvent(userId, 'message_sent', { 
       messageLength: input.length,
       timestamp: new Date() 
@@ -493,6 +502,20 @@ function ChatComponent() {
       
       let aiContent = data.message || "Fuck, lost connection. Say that again?";
       const suggestedDelay = data.suggestedDelay || 2000;
+      
+      // Track personality detection if updated
+      if (data.personalityType && data.confidence) {
+        if (data.personalityType !== detectedPersonality || Math.abs(data.confidence - personalityConfidence) > 0.1) {
+          setDetectedPersonality(data.personalityType);
+          setPersonalityConfidence(data.confidence);
+          trackPersonalityDetection(data.personalityType, data.confidence, messages.length + 1);
+        }
+      }
+      
+      // Track probe response if this was a probe
+      if (data.probeId) {
+        trackProbeResponse(data.probeId, currentInput, data.probePhase || 1);
+      }
       
       // Simulate realistic typing delay
       await new Promise(resolve => setTimeout(resolve, suggestedDelay));
@@ -946,12 +969,15 @@ function ChatComponent() {
                     onChange={(e) => {
                       setInput(e.target.value);
                       
-                      // Track typing behavior
+                      // Track typing behavior with new analytics
                       if (!typingStartTime && e.target.value.length > 0) {
                         setTypingStartTime(new Date());
+                        trackTyping('start');
                         trackUserEvent(userId, 'typing_started', {});
                       } else if (typingStartTime && e.target.value.length === 0) {
                         setTypingStops(prev => prev + 1);
+                        const duration = new Date().getTime() - typingStartTime.getTime();
+                        trackTyping('stop', duration);
                         trackUserEvent(userId, 'typing_stopped', {});
                       }
                     }}
