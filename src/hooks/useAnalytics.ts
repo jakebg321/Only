@@ -33,7 +33,7 @@ export function useAnalytics() {
     const events = [...batchQueueRef.current];
     batchQueueRef.current = [];
     
-    console.log(`[ANALYTICS] 🚀 Flushing batch: ${events.length} events`, events);
+    console.log(`[ANALYTICS] Flushing batch: ${events.length} events`, events);
     
     try {
       const response = await fetch('/api/analytics/track', {
@@ -63,7 +63,7 @@ export function useAnalytics() {
     const sessionId = getSessionId();
     const userId = getUserId();
     
-    console.log(`[ANALYTICS] 🎯 Event: ${eventType}`, {
+    console.log(`[ANALYTICS] Event: ${eventType}`, {
       sessionId: sessionId || 'NO SESSION',
       userId: userId || 'ANONYMOUS',
       eventData,
@@ -99,7 +99,7 @@ export function useAnalytics() {
     
     if (immediate) {
       // Send immediately
-      console.log('[ANALYTICS] 🚀 Sending immediate event:', event);
+      console.log('[ANALYTICS] Sending immediate event:', event);
       try {
         const response = await fetch('/api/analytics/track', {
           method: 'POST',

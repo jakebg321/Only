@@ -1,0 +1,32 @@
+{
+  "bestConfig": {
+    "typoFrequency": 0.3,
+    "lowercaseChance": 0.5,
+    "fillers": {
+      "startChance": 0.6,
+      "middleChance": 0.4,
+      "endChance": 0.6
+    },
+    "personality": {
+      "followUpChance": 0.1,
+      "capsEmphasisChance": 0.3,
+      "catchphraseChance": 0.30000000000000004
+    },
+    "contextual": {
+      "sexualEndingsOnly": true,
+      "nervousLmaoAllowed": true,
+      "matchUserPunctuation": true
+    },
+    "weights": {
+      "playful": 0.3,
+      "teasing": 0.4,
+      "bold": 0.3
+    },
+    "lastUpdated": "2025-08-22T21:07:42.831Z",
+    "version": "1.0.0"
+  },
+  "bestScore": 8.05,
+  "iterations": 100,
+  "patternsTest": 16,
+  "timestamp": "2025-08-22T22:24:37.275Z"
+}

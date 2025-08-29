@@ -9,7 +9,11 @@
     "lint": "next lint",
     "postinstall": "prisma generate",
     "docs:check": "cat CLAUDE.md | head -50",
-    "docs:full": "cat CLAUDE.md"
+    "docs:full": "cat CLAUDE.md",
+    "test:live": "npm run dev & sleep 5 && open http://localhost:3000/chat/test-lab",
+    "optimize": "node scripts/optimize-responses.js",
+    "optimize:quick": "node scripts/optimize-responses.js 20",
+    "config:reset": "rm -f config/human-variations.json && echo 'Config reset'"
   },
   "prisma": {
     "seed": "ts-node --compiler-options {\"module\":\"CommonJS\"} prisma/seed.ts"

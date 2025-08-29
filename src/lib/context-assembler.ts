@@ -43,13 +43,13 @@ export class ContextAssembler {
    */
   assembleContext(components: ContextComponents): AssembledContext {
     console.log('\\n🏗️ ASSEMBLING GROK-3 CONTEXT...');
-    console.log(`📊 Target: ${this.maxTokens.toLocaleString()} tokens across tiers`);
+    console.log(`[CONTEXT-ASSEMBLER] Target: ${this.maxTokens.toLocaleString()} tokens across tiers`);
 
     // Step 1: Prepare system prompt (always include, highest priority)
     const systemContent = this.prepareSystemPrompt(components.system);
     const systemTokens = TokenCounter.estimate(systemContent).tokens;
 
-    console.log(`🎯 System prompt: ${systemTokens} tokens (${this.allocations.system} allocated)`);
+    console.log(`[CONTEXT-ASSEMBLER] System prompt: ${systemTokens} tokens (${this.allocations.system} allocated)`);
 
     // Step 2: Fit contextual memory within allocation
     const contextContent = components.contextualMemory || '';

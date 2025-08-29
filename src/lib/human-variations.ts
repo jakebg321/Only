@@ -46,7 +46,9 @@ export class HumanVariations {
   private readonly fillers = {
     start: ['ok so', 'wait', 'omg', 'lol', 'fuck', 'ugh', 'mmm', 'sooo'],
     middle: ['like', 'literally', 'lowkey', 'honestly', 'ngl', 'fr'],
-    end: ['lol', 'lmao', 'haha', 'tho', '...', '??', '😭', '💀']
+    end: ['lol', 'haha', 'tho', '...', '??', '😭', '💀'],
+    sexual_end: ['fuck', '...', '🥵', '😈'],  // Different endings for sexual context
+    nervous_end: ['lmao', 'haha', '😅', 'lol']  // Only use lmao when nervous/deflecting
   };
 
   // Double text patterns (sending multiple messages)
@@ -92,13 +94,13 @@ export class HumanVariations {
   }
 
   /**
-   * Apply natural typos (25% chance per word)
+   * Apply natural typos (configurable chance per word)
    */
-  applyTypos(text: string): string {
+  applyTypos(text: string, frequency: number = 0.25): string {
     const words = text.split(' ');
     return words.map(word => {
-      // 25% chance of typo for common words
-      if (Math.random() < 0.25) {
+      // Configurable chance of typo for common words
+      if (Math.random() < frequency) {
         const lowerWord = word.toLowerCase();
         if (this.typoMap[lowerWord]) {
           const typos = this.typoMap[lowerWord];
@@ -112,7 +114,7 @@ export class HumanVariations {
   /**
    * Add natural fillers and quirks
    */
-  addPersonality(text: string, mood: MessageMood): string {
+  addPersonality(text: string, mood: MessageMood, userMessage?: string): string {
     let result = text;
     
     // Add starting filler (60% chance)
@@ -130,9 +132,21 @@ export class HumanVariations {
       result = words.join(' ');
     }
     
-    // Add ending (70% chance)
+    // Add ending based on context (70% chance)
     if (Math.random() < 0.7) {
-      const ending = this.fillers.end[Math.floor(Math.random() * this.fillers.end.length)];
+      // Detect context for appropriate ending
+      const lowerText = text.toLowerCase();
+      const isSexual = /fuck|sex|horny|wet|hard|cock|pussy|ass|bend|legs/.test(lowerText);
+      const isNervous = userMessage && userMessage.includes('😅');
+      
+      let endingPool = this.fillers.end;
+      if (isSexual) {
+        endingPool = this.fillers.sexual_end;
+      } else if (isNervous) {
+        endingPool = this.fillers.nervous_end;
+      }
+      
+      const ending = endingPool[Math.floor(Math.random() * endingPool.length)];
       result = `${result} ${ending}`;
     }
     
@@ -161,17 +175,25 @@ export class HumanVariations {
   /**
    * Transform response to be more human
    */
-  humanize(text: string, mood: MessageMood): { primary: string; followUp?: string } {
+  humanize(text: string, mood: MessageMood, userMessage?: string, config?: any): { primary: string; followUp?: string } {
     let result = text;
     
+    // Get config values or use defaults
+    const typoFreq = config?.typoFrequency || 0.25;
+    const lowercaseChance = config?.lowercaseChance || 0.6;
+    const followUpChance = config?.personality?.followUpChance || 0.15;
+    
+    // Remove all dashes/hyphens and replace with spaces or nothing
+    result = result.replace(/—/g, ' ').replace(/--/g, ' ').replace(/-\s/g, ' ').replace(/\s-/g, ' ');
+    
     // Apply personality first
-    result = this.addPersonality(result, mood);
+    result = this.addPersonality(result, mood, userMessage);
     
-    // Always apply some typos for naturalism
-    result = this.applyTypos(result);
+    // Apply typos with configurable frequency
+    result = this.applyTypos(result, typoFreq);
     
-    // Often lowercase everything (60% chance for casual texting)
-    if (Math.random() < 0.6) {
+    // Often lowercase everything (configurable chance for casual texting)
+    if (Math.random() < lowercaseChance) {
       result = result.toLowerCase();
     }
     
@@ -182,6 +204,18 @@ export class HumanVariations {
       words[randomWord] = words[randomWord].toUpperCase();
       result = words.join(' ');
     }
+    
+    // Match user's punctuation style
+    if (userMessage) {
+      const userHasPunctuation = /[.!?]$/.test(userMessage.trim());
+      if (!userHasPunctuation) {
+        // Remove ending punctuation if user doesn't use it
+        result = result.replace(/[.!?]+$/, '');
+      }
+    }
+    
+    // Clean up any double spaces
+    result = result.replace(/\s+/g, ' ').trim();
     
     // Check for follow-up
     const followUp = this.generateFollowUp(result);

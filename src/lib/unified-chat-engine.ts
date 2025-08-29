@@ -14,26 +14,9 @@ import { MemoryManager } from './memory-manager';
 import { ContextAssembler } from './context-assembler';
 import { TokenCounter } from './token-counter';
 import { HumanVariations } from './human-variations';
+import { ChatMessage } from './types';
 import prisma from './prisma-singleton';
 
-export interface ChatMessage {
-  id: string;
-  role: 'user' | 'assistant';
-  content: string;
-  timestamp: Date;
-  
-  // Psychological data
-  undertone?: {
-    userType: UserType;
-    confidence: number;
-    hiddenMeaning: string;
-  };
-  probeId?: string;
-  
-  // Behavioral data
-  responseTime?: number;
-  typingStops?: number;
-}
 
 export interface ChatResponse {
   message: string;
@@ -84,7 +67,7 @@ export class UnifiedChatEngine {
   ): Promise<ChatResponse> {
     
     // 1. ANALYZE UNDERTONES - REAL DATA ANALYSIS
-    console.log('\n🧠 UNIFIED CHAT ENGINE - REAL DATA ANALYSIS:');
+    console.log('[CHAT-ENGINE] Processing new message');
     console.log(`User ID: ${userId}`);
     console.log(`Message: "${message}"`);
     console.log(`Conversation history: ${conversationHistory.length} messages`);
@@ -103,12 +86,12 @@ export class UnifiedChatEngine {
       sessionDuration: this.calculateSessionDuration(conversationHistory)
     }, conversationHistory);
     
-    console.log(`📊 ANALYSIS RESULT: ${undertoneResult.userType} (${(undertoneResult.confidence * 100).toFixed(0)}% confidence)`);
-    console.log(`💰 Revenue Potential: ${undertoneResult.revenuePotential}`);
-    console.log(`🎯 Strategy: ${undertoneResult.suggestedStrategy}`);
+    console.log(`[ANALYSIS] Classification: ${undertoneResult.userType} | Confidence: ${(undertoneResult.confidence * 100).toFixed(0)}%`);
+    console.log(`[REVENUE] Potential: ${undertoneResult.revenuePotential}`);
+    console.log(`[STRATEGY] ${undertoneResult.suggestedStrategy}`);
     
     // 1.5. RETRIEVE CONTEXTUAL MEMORY USING GROK-POWERED PROFILES
-    console.log('\\n🧠 RETRIEVING CONTEXTUAL MEMORY...');
+    console.log('[MEMORY] Retrieving contextual data...');
     
     // Get user's intelligent profile summary  
     const contextualMemory = await this.memoryManager.getContextualMemory(
@@ -117,12 +100,12 @@ export class UnifiedChatEngine {
       prisma
     );
     
-    console.log(`📚 Retrieved contextual memory: "${contextualMemory.slice(0, 100)}..."`);
+    console.log(`[MEMORY] Retrieved: "${contextualMemory.slice(0, 50)}..."`);
     
     // 1.6. RETRIEVE SESSION SUMMARIES
-    console.log('\\n📋 RETRIEVING SESSION SUMMARIES...');
+    console.log('[SESSION] Retrieving summaries...');
     const sessionSummaries = await this.getSessionSummaries(userId, 5);
-    console.log(`📖 Found ${sessionSummaries.length} session summaries for context`);
+    console.log(`[SESSION] Found ${sessionSummaries.length} summaries for context`);
     
     // No need to compress memories - using intelligent summaries instead
     
@@ -153,7 +136,7 @@ export class UnifiedChatEngine {
       if (probeAnalysis.confidence > undertoneResult.confidence) {
         undertoneResult.userType = probeAnalysis.refinedType;
         undertoneResult.confidence = probeAnalysis.confidence;
-        console.log(`🎯 PROBE REFINED TYPE: ${probeAnalysis.refinedType} (${(probeAnalysis.confidence * 100).toFixed(0)}%)`);
+        console.log(`[PROBE-ANALYSIS] Refined type: ${probeAnalysis.refinedType} (${(probeAnalysis.confidence * 100).toFixed(0)}%)`);
         console.log(`   Insights: ${probeAnalysis.insights.join(', ')}`);
       }
     }
@@ -189,7 +172,7 @@ export class UnifiedChatEngine {
         });
         
         // Generate with full context
-        console.log(`\\n🎯 GENERATING WITH ${assembledContext.tokenUsage.total.toLocaleString()} TOKENS (${assembledContext.tokenUsage.utilization})`);
+        console.log(`[AI-GENERATION] Processing ${assembledContext.tokenUsage.total.toLocaleString()} tokens | Utilization: ${assembledContext.tokenUsage.utilization}`);
         
         aiResponse = await this.grokClient.generateSecureResponse(
           message, // This will be overridden by the assembled messages
@@ -216,13 +199,13 @@ export class UnifiedChatEngine {
     }
     
     // 7. UPDATE USER PROFILE INTELLIGENTLY (EVERY 10 MESSAGES)
-    console.log('\\n💾 CHECKING FOR PROFILE UPDATE...');
+    console.log('\\n[MEMORY-MANAGER] Checking for profile update...');
     try {
       const currentProfile = await this.memoryManager.getUserProfile(userId, prisma);
       const totalMessages = conversationHistory.length + 1; // +1 for current message
       
       if (this.memoryManager.shouldUpdateProfile(totalMessages)) {
-        console.log(`[MEMORY-MANAGER] 🤖 Updating profile after ${totalMessages} messages...`);
+        console.log(`[MEMORY-MANAGER] Updating profile after ${totalMessages} messages...`);
         await this.memoryManager.updateUserProfile(
           userId,
           [...conversationHistory, { role: 'user', content: message, id: 'current', timestamp: new Date() }],
@@ -230,7 +213,7 @@ export class UnifiedChatEngine {
           prisma
         );
       } else {
-        console.log(`[MEMORY-MANAGER] ⏰ Profile update not needed yet (${totalMessages} messages)`);
+        console.log(`[MEMORY-MANAGER] Profile update not needed yet (${totalMessages} messages)`);
       }
     } catch (error) {
       console.error('Profile update failed (non-critical):', error);
@@ -239,13 +222,18 @@ export class UnifiedChatEngine {
     // 8. HUMANIZE THE RESPONSE
     const currentHour = new Date().getHours();
     const mood = this.humanVariations.detectMood(message, currentHour);
-    console.log(`🎭 [HUMANIZE] Detected mood:`, mood);
-    console.log(`🎭 [HUMANIZE] Original response: "${aiResponse.substring(0, 50)}..."`);
+    console.log(`[HUMANIZE] Detected mood:`, mood);
+    console.log(`[HUMANIZE] Original response: "${aiResponse.substring(0, 50)}..."`);
     
-    const humanized = this.humanVariations.humanize(aiResponse, mood);
-    console.log(`🎭 [HUMANIZE] Humanized response: "${humanized.primary.substring(0, 50)}..."`);
+    // Get config if available
+    let config = null;
+    // Skip config loading for now to avoid Next.js issues
+    // Config will be passed from API routes instead
+    
+    const humanized = this.humanVariations.humanize(aiResponse, mood, message, config);
+    console.log(`[HUMANIZE] Humanized response: "${humanized.primary.substring(0, 50)}..."`);
     if (humanized.followUp) {
-      console.log(`🎭 [HUMANIZE] Follow-up generated: "${humanized.followUp}"`);
+      console.log(`[HUMANIZE] Follow-up generated: "${humanized.followUp}"`);
     }
     
     // Use the humanized version
@@ -348,13 +336,14 @@ Vibe: They're just browsing. Don't waste time. Examples:
 ${probe ? `BTW work this in naturally: "${probe.question}"` : ''}
 
 Text like a real person would:
-- Use lowercase sometimes
-- Make typos occasionally (ur, u, prolly, etc)
-- Double text if you think of something else
-- React to WHAT they said specifically
-- Use phrases like "stoppp", "you're trouble", "obsessed"
-- DON'T repeat the same responses
-- DON'T sound like customer service
+• Use lowercase sometimes
+• Make typos occasionally (ur, u, prolly, etc)
+• Double text if you think of something else
+• React to WHAT they said specifically
+• Use phrases like "stoppp", "you're trouble", "obsessed"
+• DON'T repeat the same responses
+• DON'T sound like customer service
+• NO dashes or hyphens anywhere
 
 Just text them back naturally.`;
   }

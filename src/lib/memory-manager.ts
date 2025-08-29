@@ -22,7 +22,7 @@ export class MemoryManager {
   private grokClient: SecureGrokClient | null = null;
 
   constructor() {
-    console.log('[MEMORY-MANAGER] 🧠 Using Grok-powered intelligent memory');
+    console.log('[MEMORY-MANAGER] Using Grok-powered intelligent memory');
     
     // Initialize Grok client for profile management
     if (process.env.GROK_API_KEY) {
@@ -106,7 +106,7 @@ Return ONLY a JSON object with the updated profile, or "no changes" if no signif
 Focus on information that will help personalize future conversations and improve user experience.
       `.trim();
 
-      console.log('[MEMORY-MANAGER] 🤖 Asking Grok to analyze user profile...');
+      console.log('[MEMORY-MANAGER] Asking Grok to analyze user profile...');
 
       // For now, skip Grok analysis and return a simple updated profile
       // TODO: Implement proper Grok analysis once we have the correct method
@@ -200,7 +200,7 @@ Focus on information that will help personalize future conversations and improve
         ? contextParts.join(' | ')
         : 'No specific context available yet.';
 
-      console.log('[MEMORY-MANAGER] 📋 Retrieved contextual memory for user');
+      console.log('[MEMORY-MANAGER] Retrieved contextual memory for user');
       return contextSummary;
 
     } catch (error) {

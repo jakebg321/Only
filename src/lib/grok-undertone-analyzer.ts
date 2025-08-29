@@ -52,7 +52,7 @@ export class GrokUndertoneAnalyzer {
   private checkCache(key: string): UndertoneResult | null {
     const cached = this.cache.get(key);
     if (cached && Date.now() - cached.timestamp < this.cacheTimeout) {
-      console.log('🎯 [GROK-ANALYZER] Cache hit for pattern');
+      console.log('[CACHE] Pattern found in memory');
       return cached.result;
     }
     return null;
@@ -70,7 +70,7 @@ export class GrokUndertoneAnalyzer {
     const cached = this.checkCache(cacheKey);
     if (cached) return cached;
     
-    console.log('🤖 [GROK-ANALYZER] Performing AI analysis...');
+    console.log('[AI-ANALYSIS] Initiating neural network processing...');
     
     try {
       // Build comprehensive analysis prompt
@@ -130,11 +130,11 @@ export class GrokUndertoneAnalyzer {
         timestamp: Date.now()
       });
       
-      console.log(`✅ [GROK-ANALYZER] Detected: ${result.userType} (${(result.confidence * 100).toFixed(0)}%)`);
+      console.log(`[AI-ANALYSIS] Classification: ${result.userType} | Confidence: ${(result.confidence * 100).toFixed(0)}%`);
       return result;
       
     } catch (error) {
-      console.error('❌ [GROK-ANALYZER] Analysis failed:', error);
+      console.error('[AI-ANALYSIS] ERROR: Analysis failed -', error);
       
       // Fallback to unknown
       return {
@@ -239,7 +239,7 @@ RETURN JSON ONLY:
       return JSON.parse(response);
       
     } catch (error) {
-      console.error('❌ [GROK-ANALYZER] Failed to parse response:', response);
+      console.error('[AI-ANALYSIS] ERROR: Parse failure -', response);
       
       // Return default analysis
       return {
@@ -273,7 +273,7 @@ RETURN JSON ONLY:
    */
   clearCache(): void {
     this.cache.clear();
-    console.log('🗑️ [GROK-ANALYZER] Cache cleared');
+    console.log('[CACHE] Memory cleared');
   }
   
   /**

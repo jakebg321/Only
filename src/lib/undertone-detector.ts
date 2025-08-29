@@ -38,7 +38,7 @@ export class UndertoneDetector {
     const message = context.message.toLowerCase().trim();
     const words = message.split(' ').length;
     
-    console.log('🔍 REAL UNDERTONE ANALYSIS STARTING:');
+    console.log('[PSYCHOLOGICAL-ANALYSIS] Processing behavioral patterns...');
     console.log(`   Input: "${context.message}"`);
     console.log(`   Time: ${context.timeOfDay}:00 | Response: ${context.responseTime}ms | Stops: ${context.typingStops}`);
     console.log(`   Previous Q: "${context.previousQuestion || 'none'}"`);
@@ -63,12 +63,12 @@ export class UndertoneDetector {
     );
     
     if (bestMatch.confidence >= 0.3) {
-      console.log(`✅ DETECTED: ${bestMatch.userType} (${(bestMatch.confidence * 100).toFixed(0)}%)`);
+      console.log(`[DETECTION] Type: ${bestMatch.userType} | Confidence: ${(bestMatch.confidence * 100).toFixed(0)}%`);
       return bestMatch;
     }
     
     // Default to unknown
-    console.log(`❓ RESULT: UNKNOWN (30%) - no clear patterns detected`);
+    console.log(`[DETECTION] Type: UNKNOWN | Confidence: 30% | Status: Insufficient data`);
     return {
       userType: UserType.UNKNOWN,
       confidence: 0.3,

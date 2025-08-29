@@ -48,7 +48,7 @@ export async function POST(request: NextRequest) {
     // Save to file
     await writeFile(filePath, JSON.stringify(enhancedResults, null, 2));
     
-    console.log(`[TEST-LAB] 💾 Saved results to: ${filePath}`);
+    console.log(`[TEST-LAB] Saved results to: ${filePath}`);
     
     return NextResponse.json({
       success: true,

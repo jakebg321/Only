@@ -81,7 +81,7 @@ export async function GET(request: Request) {
         }
       });
       
-      console.log(`[Sessions API] 📊 CORRECTED Stats: Total=${totalSessions}, Active=${activeSessions}, AvgDuration=${avgDurationResult._avg.duration || 0}, FilteredSessions=${filteredCount}`);
+      console.log(`[Sessions API] CORRECTED Stats: Total=${totalSessions}, Active=${activeSessions}, AvgDuration=${avgDurationResult._avg.duration || 0}, FilteredSessions=${filteredCount}`);
       
       stats = {
         totalSessions,
@@ -152,7 +152,7 @@ export async function GET(request: Request) {
         }
       });
       
-      console.log(`[Sessions API] 📊 LEGACY Stats: Total=${totalSessions}, Active=${activeSessions}, AvgDuration=${avgDurationResult._avg.duration || 0}`);
+      console.log(`[Sessions API] LEGACY Stats: Total=${totalSessions}, Active=${activeSessions}, AvgDuration=${avgDurationResult._avg.duration || 0}`);
 
       // Get top values efficiently
       const topStats = await prisma.$queryRaw<any[]>`

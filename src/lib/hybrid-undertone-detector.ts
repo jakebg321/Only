@@ -6,7 +6,7 @@
 
 import { UserType, UndertoneResult, MessageContext } from './undertone-detector';
 import { GrokUndertoneAnalyzer } from './grok-undertone-analyzer';
-import { ChatMessage } from './unified-chat-engine';
+import { ChatMessage } from './types';
 
 export class HybridUndertoneDetector {
   private grokAnalyzer: GrokUndertoneAnalyzer | null = null;
@@ -16,9 +16,9 @@ export class HybridUndertoneDetector {
     // Initialize Grok analyzer if API key is available
     if (process.env.GROK_API_KEY) {
       this.grokAnalyzer = new GrokUndertoneAnalyzer(process.env.GROK_API_KEY);
-      console.log('🤖 [HYBRID-DETECTOR] AI-powered detection enabled');
+      console.log('[AI-DETECTOR] Neural pattern analysis enabled');
     } else {
-      console.log('⚠️ [HYBRID-DETECTOR] No Grok API key, using pattern-only detection');
+      console.log('[AI-DETECTOR] WARNING: API key missing, fallback to pattern matching');
       this.useAI = false;
     }
   }
@@ -32,7 +32,7 @@ export class HybridUndertoneDetector {
   ): Promise<UndertoneResult> {
     const message = context.message.toLowerCase().trim();
     
-    console.log('🔍 HYBRID UNDERTONE ANALYSIS:');
+    console.log('[ANALYSIS] Processing psychological patterns...');
     console.log(`   Input: "${context.message}"`);
     console.log(`   Method: ${this.useAI ? 'AI-Powered' : 'Pattern-Based'}`);
     
@@ -42,7 +42,7 @@ export class HybridUndertoneDetector {
         // Quick pattern check for obvious cases (super fast path)
         const quickResult = this.quickPatternCheck(message, context);
         if (quickResult && quickResult.confidence > 0.8) {
-          console.log('⚡ Quick pattern match - skipping AI');
+          console.log('[OPTIMIZATION] Fast pattern match - bypassing neural network');
           return quickResult;
         }
         
@@ -246,7 +246,7 @@ export class HybridUndertoneDetector {
    */
   setAIMode(enabled: boolean): void {
     this.useAI = enabled && this.grokAnalyzer !== null;
-    console.log(`🔄 [HYBRID-DETECTOR] AI mode: ${this.useAI ? 'enabled' : 'disabled'}`);
+    console.log(`[AI-DETECTOR] Neural analysis: ${this.useAI ? 'ACTIVE' : 'INACTIVE'}`);
   }
   
   /**

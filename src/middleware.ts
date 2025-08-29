@@ -43,7 +43,7 @@ export async function middleware(request: NextRequest) {
       sessionData = SessionTrackerLite.getSessionData(request);
       // Only log if it's a new session to reduce noise
       if (!existingSessionId) {
-        console.log(`[MIDDLEWARE-SESSION] 📊 New session:`, {
+        console.log(`[MIDDLEWARE-SESSION] New session:`, {
           sessionId: sessionData.sessionId,
           browser: sessionData.browser,
           os: sessionData.os,
