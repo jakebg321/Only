@@ -300,10 +300,22 @@ export class UnifiedChatEngine {
       contextualResponse = 'They asked about pricing - be direct but seductive about it';
     }
     
+    // Check if this is a continuation response (like "sounds fun" or "yeah")
+    const isContinuation = /^(yeah|yes|ok|sure|sounds|nice|cool|lol|haha|hmm|oh|really|wow)/.test(userMessage.toLowerCase());
+    
     return `
-They said: "${userMessage}"
+THIS IS AN ONGOING CONVERSATION. The user just said: "${userMessage}"
 
-${contextualResponse ? `Context: ${contextualResponse}` : ''}
+${isContinuation ? `⚠️ IMPORTANT: They're responding to something you said earlier. Reference your previous message specifically. Don't start a new topic.` : ''}
+
+${contextualResponse ? `Context hint: ${contextualResponse}` : ''}
+
+CONVERSATION CONTINUITY RULES:
+1. If they say "sounds fun/good/nice" - ask what specifically they're referring to
+2. If they give a short response - reference what you were just talking about
+3. Build on the conversation - don't reset to generic greetings
+4. Remember what you asked them and follow up if they didn't answer
+5. If you asked their name and they didn't tell you, playfully ask again
 
 ${undertone.userType === 'MARRIED_GUILTY' ? `
 Vibe: They're being sneaky/guilty. Be their fun secret. Examples:

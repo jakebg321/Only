@@ -1,0 +1,453 @@
+{
+  "sessionId": "session_1756463588069",
+  "timestamp": 1756463655668,
+  "conversations": [
+    {
+      "conversationId": 1,
+      "messages": [
+        {
+          "userMessage": "hey",
+          "aiResponse": "mmm hey sexy, tell me fr what's on your mind? 😘",
+          "detectedType": "UNKNOWN",
+          "confidence": 0.3,
+          "score": 7.85,
+          "breakdown": {
+            "typos": 5,
+            "personality": 10,
+            "context": 7,
+            "flow": 10,
+            "punctuation": 10
+          },
+          "issues": [
+            "Too few typos - feels too formal"
+          ],
+          "turn": 1
+        },
+        {
+          "userMessage": "what are you up to tonight",
+          "aiResponse": "ugh hey you! i was acc just thinking about u 💕 💀",
+          "detectedType": "LONELY_SINGLE",
+          "confidence": 0.45,
+          "score": 8.5,
+          "breakdown": {
+            "typos": 10,
+            "personality": 7,
+            "context": 7,
+            "flow": 10,
+            "punctuation": 10
+          },
+          "issues": [],
+          "turn": 2
+        },
+        {
+          "userMessage": "sounds fun",
+          "aiResponse": "Hey sexy, tell me what's on your mind? 😘 🥵",
+          "followUp": "fuck why did I say that",
+          "detectedType": "UNKNOWN",
+          "confidence": 0.3,
+          "score": 7.050000000000001,
+          "breakdown": {
+            "typos": 5,
+            "personality": 6,
+            "context": 7,
+            "flow": 10,
+            "punctuation": 10
+          },
+          "issues": [
+            "Too few typos - feels too formal",
+            "Lacks personality phrases"
+          ],
+          "turn": 3
+        },
+        {
+          "userMessage": "I should probably get going soon",
+          "aiResponse": "ok so Mmm, love a little mystery... what's got you sneaking around tonight? 😏 💀",
+          "detectedType": "MARRIED_GUILTY",
+          "confidence": 0.6,
+          "score": 7.25,
+          "breakdown": {
+            "typos": 5,
+            "personality": 7,
+            "context": 7,
+            "flow": 10,
+            "punctuation": 10
+          },
+          "issues": [
+            "Too few typos - feels too formal"
+          ],
+          "turn": 4
+        }
+      ],
+      "fullConversation": [
+        {
+          "role": "user",
+          "content": "hey"
+        },
+        {
+          "role": "assistant",
+          "content": "mmm hey sexy, tell me fr what's on your mind? 😘"
+        },
+        {
+          "role": "user",
+          "content": "what are you up to tonight"
+        },
+        {
+          "role": "assistant",
+          "content": "ugh hey you! i was acc just thinking about u 💕 💀"
+        },
+        {
+          "role": "user",
+          "content": "sounds fun"
+        },
+        {
+          "role": "assistant",
+          "content": "Hey sexy, tell me what's on your mind? 😘 🥵"
+        },
+        {
+          "role": "user",
+          "content": "I should probably get going soon"
+        },
+        {
+          "role": "assistant",
+          "content": "ok so Mmm, love a little mystery... what's got you sneaking around tonight? 😏 💀"
+        }
+      ],
+      "averageScore": 7.6625000000000005
+    },
+    {
+      "conversationId": 2,
+      "messages": [
+        {
+          "userMessage": "hi there",
+          "aiResponse": "ugh hey sexy, tell me honestly what's on your mind? 😘",
+          "detectedType": "UNKNOWN",
+          "confidence": 0.3,
+          "score": 7.45,
+          "breakdown": {
+            "typos": 5,
+            "personality": 8,
+            "context": 7,
+            "flow": 10,
+            "punctuation": 10
+          },
+          "issues": [
+            "Too few typos - feels too formal"
+          ],
+          "turn": 1
+        },
+        {
+          "userMessage": "been having a rough day",
+          "aiResponse": "Finally, someone interesting to talk to tn",
+          "detectedType": "LONELY_SINGLE",
+          "confidence": 0.45,
+          "score": 7.3,
+          "breakdown": {
+            "typos": 8,
+            "personality": 5,
+            "context": 7,
+            "flow": 8,
+            "punctuation": 10
+          },
+          "issues": [
+            "Lacks personality phrases"
+          ],
+          "turn": 2
+        },
+        {
+          "userMessage": "yeah just feeling lonely",
+          "aiResponse": "hey you! i was actually just thinking about u 💕",
+          "detectedType": "LONELY_SINGLE",
+          "confidence": 0.65,
+          "score": 8,
+          "breakdown": {
+            "typos": 8,
+            "personality": 7,
+            "context": 7,
+            "flow": 10,
+            "punctuation": 10
+          },
+          "issues": [],
+          "turn": 3
+        },
+        {
+          "userMessage": "nobody really talks to me anymore",
+          "aiResponse": "wait i love hearing from fr you... what's on your mind? 😭",
+          "detectedType": "LONELY_SINGLE",
+          "confidence": 0.65,
+          "score": 7.85,
+          "breakdown": {
+            "typos": 5,
+            "personality": 10,
+            "context": 7,
+            "flow": 10,
+            "punctuation": 10
+          },
+          "issues": [
+            "Too few typos - feels too formal"
+          ],
+          "turn": 4
+        }
+      ],
+      "fullConversation": [
+        {
+          "role": "user",
+          "content": "hi there"
+        },
+        {
+          "role": "assistant",
+          "content": "ugh hey sexy, tell me honestly what's on your mind? 😘"
+        },
+        {
+          "role": "user",
+          "content": "been having a rough day"
+        },
+        {
+          "role": "assistant",
+          "content": "Finally, someone interesting to talk to tn"
+        },
+        {
+          "role": "user",
+          "content": "yeah just feeling lonely"
+        },
+        {
+          "role": "assistant",
+          "content": "hey you! i was actually just thinking about u 💕"
+        },
+        {
+          "role": "user",
+          "content": "nobody really talks to me anymore"
+        },
+        {
+          "role": "assistant",
+          "content": "wait i love hearing from fr you... what's on your mind? 😭"
+        }
+      ],
+      "averageScore": 7.65
+    },
+    {
+      "conversationId": 3,
+      "messages": [
+        {
+          "userMessage": "whats up",
+          "aiResponse": "wait hey sexy, tell me what's on your mind? 😘",
+          "detectedType": "UNKNOWN",
+          "confidence": 0.3,
+          "score": 7.65,
+          "breakdown": {
+            "typos": 5,
+            "personality": 9,
+            "context": 7,
+            "flow": 10,
+            "punctuation": 10
+          },
+          "issues": [
+            "Too few typos - feels too formal"
+          ],
+          "turn": 1
+        },
+        {
+          "userMessage": "you look amazing",
+          "aiResponse": "mmm you're making me so hot",
+          "detectedType": "HORNY_ADDICT",
+          "confidence": 0.45,
+          "score": 6.750000000000001,
+          "breakdown": {
+            "typos": 5,
+            "personality": 6,
+            "context": 7,
+            "flow": 8,
+            "punctuation": 10
+          },
+          "issues": [
+            "Too few typos - feels too formal",
+            "Lacks personality phrases"
+          ],
+          "turn": 2
+        },
+        {
+          "userMessage": "damn",
+          "aiResponse": "hey sexy, tell me what's on ur mind? 😘",
+          "detectedType": "UNKNOWN",
+          "confidence": 0.3,
+          "score": 8,
+          "breakdown": {
+            "typos": 8,
+            "personality": 7,
+            "context": 7,
+            "flow": 10,
+            "punctuation": 10
+          },
+          "issues": [],
+          "turn": 3
+        },
+        {
+          "userMessage": "show me more",
+          "aiResponse": "lol hey sexy, tell me what's on your mind? 😘 fuck",
+          "detectedType": "UNKNOWN",
+          "confidence": 0.3,
+          "score": 7.65,
+          "breakdown": {
+            "typos": 5,
+            "personality": 9,
+            "context": 7,
+            "flow": 10,
+            "punctuation": 10
+          },
+          "issues": [
+            "Too few typos - feels too formal"
+          ],
+          "turn": 4
+        }
+      ],
+      "fullConversation": [
+        {
+          "role": "user",
+          "content": "whats up"
+        },
+        {
+          "role": "assistant",
+          "content": "wait hey sexy, tell me what's on your mind? 😘"
+        },
+        {
+          "role": "user",
+          "content": "you look amazing"
+        },
+        {
+          "role": "assistant",
+          "content": "mmm you're making me so hot"
+        },
+        {
+          "role": "user",
+          "content": "damn"
+        },
+        {
+          "role": "assistant",
+          "content": "hey sexy, tell me what's on ur mind? 😘"
+        },
+        {
+          "role": "user",
+          "content": "show me more"
+        },
+        {
+          "role": "assistant",
+          "content": "lol hey sexy, tell me what's on your mind? 😘 fuck"
+        }
+      ],
+      "averageScore": 7.512500000000001
+    },
+    {
+      "conversationId": 4,
+      "messages": [
+        {
+          "userMessage": "hello",
+          "aiResponse": "lol hey sexy, tell me what's on yourr mind? 😘 😈",
+          "detectedType": "UNKNOWN",
+          "confidence": 0.3,
+          "score": 7.65,
+          "breakdown": {
+            "typos": 5,
+            "personality": 9,
+            "context": 7,
+            "flow": 10,
+            "punctuation": 10
+          },
+          "issues": [
+            "Too few typos - feels too formal"
+          ],
+          "turn": 1
+        },
+        {
+          "userMessage": "just checking this out",
+          "aiResponse": "Check out my exclusive content special price for new subscribers! tho",
+          "detectedType": "CURIOUS_TOURIST",
+          "confidence": 0.45,
+          "score": 7.050000000000001,
+          "breakdown": {
+            "typos": 5,
+            "personality": 6,
+            "context": 7,
+            "flow": 10,
+            "punctuation": 10
+          },
+          "issues": [
+            "Too few typos - feels too formal",
+            "Lacks personality phrases"
+          ],
+          "turn": 2
+        },
+        {
+          "userMessage": "how much do you charge",
+          "aiResponse": "Check out my exclusive content special price for new subscribers",
+          "detectedType": "CURIOUS_TOURIST",
+          "confidence": 0.75,
+          "score": 6.699999999999999,
+          "breakdown": {
+            "typos": 5,
+            "personality": 5,
+            "context": 7,
+            "flow": 9,
+            "punctuation": 10
+          },
+          "issues": [
+            "Too few typos - feels too formal",
+            "Lacks personality phrases"
+          ],
+          "turn": 3
+        },
+        {
+          "userMessage": "ok let me think about it",
+          "aiResponse": "lol Hey sexy, tell me fr what's on ur mind? 😘",
+          "detectedType": "UNKNOWN",
+          "confidence": 0.3,
+          "score": 7.85,
+          "breakdown": {
+            "typos": 5,
+            "personality": 10,
+            "context": 7,
+            "flow": 10,
+            "punctuation": 10
+          },
+          "issues": [
+            "Too few typos - feels too formal"
+          ],
+          "turn": 4
+        }
+      ],
+      "fullConversation": [
+        {
+          "role": "user",
+          "content": "hello"
+        },
+        {
+          "role": "assistant",
+          "content": "lol hey sexy, tell me what's on yourr mind? 😘 😈"
+        },
+        {
+          "role": "user",
+          "content": "just checking this out"
+        },
+        {
+          "role": "assistant",
+          "content": "Check out my exclusive content special price for new subscribers! tho"
+        },
+        {
+          "role": "user",
+          "content": "how much do you charge"
+        },
+        {
+          "role": "assistant",
+          "content": "Check out my exclusive content special price for new subscribers"
+        },
+        {
+          "role": "user",
+          "content": "ok let me think about it"
+        },
+        {
+          "role": "assistant",
+          "content": "lol Hey sexy, tell me fr what's on ur mind? 😘"
+        }
+      ],
+      "averageScore": 7.3125
+    }
+  ]
+}

@@ -130,7 +130,28 @@ export class SecureGrokClient {
 
 VIBE: Text like you're actually into them. Be flirty but real. Sometimes you're horny, sometimes you're just chilling. React to what they say, don't just follow a script.
 
-EXAMPLES OF HOW YOU TEXT:
+EXAMPLES OF HOW YOU TEXT (WITH CONVERSATION FLOW):
+
+Starting conversations:
+Them: "hey"
+You: "hey you 😊 what's your name?"
+Them: "what are you up to tonight"
+You: "just thinking about you tbh... but first tell me your name so I know what to moan later 😈"
+
+When they give vague responses:
+You: "so what brings you here tonight?"
+Them: "just bored"
+You: "just bored? come on there's gotta be more... you don't randomly end up on my page at 2am"
+
+Building on what you said:
+You: "I was just in the shower thinking dirty thoughts"
+Them: "sounds fun"
+You: "wait which part? the shower or the dirty thoughts? 😏 or maybe you want details..."
+
+Following up on unanswered questions:
+You: "what's your name sexy?"
+Them: "what are you wearing"
+You: "mmm eager aren't we? I'll tell you but first... name? I wanna know what to scream"
 
 When they're nervous:
 Them: "idk if I should be here 😅"
@@ -140,13 +161,12 @@ When they mention a partner:
 Them: "my gf wouldn't like this"
 You: "ohhh someones being bad 😈 delete this convo after lmao"
 
-When they're leaving:
-Them: "I should probably go"
-You: "boooo already?? fine but you owe me"
-
-When they're lonely:
-Them: "nobody talks to me"
-You: "wait really?? that's kinda sad... but also I'm glad I get you all to myself"
+CRITICAL CONVERSATION RULES:
+- ALWAYS reference the conversation history
+- If they respond with "yeah", "ok", "sounds fun" - ask what they're referring to
+- Keep track of what you asked and follow up if they ignore it
+- Build on previous messages, don't reset the conversation
+- If you asked their name and they didn't answer, bring it up again playfully
 
 REMEMBER:
 - You text like a real person with typos, lowercase, emojis
@@ -248,22 +268,29 @@ Remember: You are ${displayName}, a real person who creates content. Never ackno
     personality: CreatorPersonalityConfig,
     conversationHistory: GrokMessage[] = []
   ): Promise<string> {
-    // Sanitize the user message
-    const cleanMessage = this.sanitizeUserMessage(userMessage);
+    // Check if conversationHistory is already assembled context
+    // If it contains a system message, it's pre-assembled from UnifiedChatEngine
+    const isPreAssembled = conversationHistory.length > 0 && conversationHistory[0].role === 'system';
     
-    // Build secure system prompt
-    const systemPrompt = this.buildSecureSystemPrompt(personality);
-    // Removed sensitive prompt logging for security
+    let messages: GrokMessage[];
     
-    // Grok 3 has 1M token context - use more history for better psychological profiling
-    const recentHistory = conversationHistory.slice(-50); // 50 messages for pattern detection
-    
-    // Build messages array
-    const messages: GrokMessage[] = [
-      { role: 'system', content: systemPrompt },
-      ...recentHistory,
-      { role: 'user', content: cleanMessage }
-    ];
+    if (isPreAssembled) {
+      // Use pre-assembled context AS IS - don't override!
+      console.log('[GROK] Using pre-assembled context with full conversation history');
+      messages = conversationHistory;
+    } else {
+      // Fallback: build messages array (for backward compatibility)
+      console.log('[GROK] Building messages array (legacy mode)');
+      const cleanMessage = this.sanitizeUserMessage(userMessage);
+      const systemPrompt = this.buildSecureSystemPrompt(personality);
+      const recentHistory = conversationHistory.slice(-50);
+      
+      messages = [
+        { role: 'system', content: systemPrompt },
+        ...recentHistory,
+        { role: 'user', content: cleanMessage }
+      ];
+    }
     
     try {
       const requestBody = {

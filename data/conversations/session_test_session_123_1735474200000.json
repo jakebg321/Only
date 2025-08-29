@@ -1,0 +1,19 @@
+{
+  "sessionId": "test_session_123",
+  "timestamp": 1735474200000,
+  "conversations": [
+    {
+      "conversationId": 1,
+      "messages": [
+        {
+          "role": "user",
+          "content": "test message"
+        },
+        {
+          "role": "assistant",
+          "content": "test response"
+        }
+      ]
+    }
+  ]
+}

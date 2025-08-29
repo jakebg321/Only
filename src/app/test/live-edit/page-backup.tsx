@@ -142,13 +142,7 @@ export default function LiveEditPage() {
     }
   };
 
-  const testMessage = async (
-    text: string = message, 
-    conversationHistory: any[] = [], 
-    sessionId: string = `session-${Date.now()}`,
-    userId: string = `user-${Date.now()}`,
-    silent: boolean = false
-  ) => {
+  const testMessage = async (text: string = message, silent: boolean = false) => {
     if (!text.trim()) return;
     
     setLoading(true);
@@ -158,9 +152,8 @@ export default function LiveEditPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           message: text,
-          userId,
-          sessionId,
-          conversationHistory // NOW WE'RE SENDING THE HISTORY!
+          userId: `user-${Date.now()}`,
+          sessionId: `session-${Date.now()}`
         })
       });
       
@@ -210,10 +203,6 @@ export default function LiveEditPage() {
     let conversationHistory: any[] = [];
     let totalScore = 0;
     
-    // CONSISTENT IDs for the entire conversation!
-    const sessionId = `session-${conversationData.id}-${Date.now()}`;
-    const userId = `user-${conversationData.id}-${Date.now()}`;
-    
     for (let i = 0; i < conversationData.messages.length; i++) {
       const userMessage = conversationData.messages[i];
       
@@ -240,14 +229,7 @@ export default function LiveEditPage() {
       }
       
       try {
-        // NOW PASSING CONVERSATION HISTORY!
-        const result = await testMessage(
-          userMessage, 
-          conversationHistory,
-          sessionId,
-          userId,
-          true
-        );
+        const result = await testMessage(userMessage, true);
         if (result) {
           if (isLiveMode) {
             // Remove typing indicator and add actual response
@@ -338,30 +320,6 @@ export default function LiveEditPage() {
     return conversationResults;
   };
 
-  // Auto-save conversations to server
-  const saveConversationsToServer = async (conversations: any[], sessionId: string) => {
-    try {
-      const response = await fetch('/api/conversations/save', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          sessionId,
-          conversations,
-          timestamp: Date.now()
-        })
-      });
-      
-      if (response.ok) {
-        const result = await response.json();
-        console.log('[LIVE-EDIT] 💾 Conversations auto-saved:', result.path);
-      } else {
-        console.error('[LIVE-EDIT] ❌ Failed to save conversations');
-      }
-    } catch (error) {
-      console.error('[LIVE-EDIT] ❌ Error saving conversations:', error);
-    }
-  };
-
   const runBatchTest = async () => {
     setTesting(true);
     setTestProgress(0);
@@ -371,7 +329,6 @@ export default function LiveEditPage() {
     
     const iterations = 8; // Fewer iterations since we're running full conversations
     const allResults: any[] = [];
-    const sessionId = `session_${Date.now()}`; // Create unique session ID
     
     const baseConfig = config || {
       typoFrequency: 0.3,
@@ -439,10 +396,6 @@ export default function LiveEditPage() {
       
       configResults.averageScore = conversationCount > 0 ? totalScore / conversationCount : 0;
       allResults.push(configResults);
-      
-      // Auto-save after each iteration
-      await saveConversationsToServer(configResults.conversations, sessionId);
-      
       setTestProgress(((i + 1) / iterations) * 100);
     }
     
@@ -451,29 +404,9 @@ export default function LiveEditPage() {
     setTesting(false);
     setCurrentlyRunning(null);
     
-    // Save complete session to localStorage as backup
-    const reviewSession = {
-      sessionId,
-      timestamp: Date.now(),
-      iterations,
-      results: allResults,
-      feedback: {}
-    };
-    
-    // Update localStorage with new session
-    const sessions = JSON.parse(localStorage.getItem('reviewSessions') || '[]');
-    sessions.push(reviewSession);
-    localStorage.setItem('reviewSessions', JSON.stringify(sessions));
-    
-    // Also save complete session to server
-    await saveConversationsToServer(
-      allResults.flatMap(r => r.conversations),
-      `${sessionId}_complete`
-    );
-    
     // Show clear prompt for feedback
     setTimeout(() => {
-      alert('🎯 Testing Complete!\n\nAll conversations have been automatically saved.\n\nNow review the 4 conversations from each test and rate which responses feel most natural and engaging.\n\nClick "Review Results" to start rating!');
+      alert('🎯 Testing Complete!\n\nNow review the 4 conversations from each test and rate which responses feel most natural and engaging.\n\nClick "Review Results" to start rating!');
       setShowReview(true);
     }, 500);
   };
@@ -888,7 +821,6 @@ export default function LiveEditPage() {
           )}
         </div>
       </div>
-      </div>
       
       {/* Notepad Sidebar */}
       <div className={`w-80 bg-gray-50 dark:bg-gray-900 border-l transition-all duration-300 ${showNotes ? 'translate-x-0' : 'translate-x-full'}`}>
@@ -1080,109 +1012,70 @@ Examples:
       {/* Live Conversation Display */}
       {showLiveDisplay && currentlyRunning && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white dark:bg-gray-900 rounded-lg max-w-6xl max-h-[85vh] overflow-hidden w-full flex">
-            {/* Main Conversation Area */}
-            <div className="flex-1 flex flex-col">
-              <div className="sticky top-0 bg-white dark:bg-gray-900 border-b p-4">
-                <div className="flex items-center justify-between mb-2">
-                  <h2 className="text-xl font-bold">Live Testing - Config {currentlyRunning.iteration}</h2>
-                  <div className="flex gap-2">
-                    <Button
-                      onClick={() => setIsPaused(!isPaused)}
-                      variant="outline"
-                      size="sm"
-                    >
-                      {isPaused ? '▶️ Resume' : '⏸️ Pause'}
-                    </Button>
-                    <Button
-                      onClick={() => {
-                        setShowLiveDisplay(false);
-                        setTesting(false);
-                        setCurrentlyRunning(null);
-                      }}
-                      variant="outline" 
-                      size="sm"
-                    >
-                      🛑 Stop
-                    </Button>
-                  </div>
-                </div>
-                
-                <div className="text-sm text-gray-600 space-y-1">
-                  <div>Conversation {currentlyRunning.conversationId} / 4</div>
-                  <div>Message Delay: {messageDelay}s</div>
-                  <div className="text-xs bg-gray-100 dark:bg-gray-800 p-2 rounded">
-                    Config: Typos: {currentlyRunning.config?.typoFrequency?.toFixed(2)}, 
-                    Lowercase: {currentlyRunning.config?.lowercaseChance?.toFixed(2)}
-                  </div>
+          <div className="bg-white dark:bg-gray-900 rounded-lg max-w-2xl max-h-[80vh] overflow-hidden w-full">
+            <div className="sticky top-0 bg-white dark:bg-gray-900 border-b p-4">
+              <div className="flex items-center justify-between mb-2">
+                <h2 className="text-xl font-bold">Live Testing - Config {currentlyRunning.iteration}</h2>
+                <div className="flex gap-2">
+                  <Button
+                    onClick={() => setIsPaused(!isPaused)}
+                    variant="outline"
+                    size="sm"
+                  >
+                    {isPaused ? '▶️ Resume' : '⏸️ Pause'}
+                  </Button>
+                  <Button
+                    onClick={() => {
+                      setShowLiveDisplay(false);
+                      setTesting(false);
+                      setCurrentlyRunning(null);
+                    }}
+                    variant="outline" 
+                    size="sm"
+                  >
+                    🛑 Stop
+                  </Button>
                 </div>
               </div>
               
-              <div className="p-4 flex-1 overflow-y-auto">
-                <div className="space-y-3">
-                  {liveMessages.map((msg, index) => (
-                    <div key={index} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                      <div className={`max-w-xs p-3 rounded-lg text-sm ${
-                        msg.role === 'user' 
-                          ? 'bg-blue-500 text-white' 
-                          : 'bg-gray-100 dark:bg-gray-800 border'
-                      }`}>
-                        {msg.content}
-                        {msg.isTyping && (
-                          <div className="flex items-center mt-1">
-                            <div className="flex space-x-1">
-                              <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
-                              <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-                              <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                  
-                  {currentlyRunning?.delayCountdown && (
-                    <div className="text-center text-gray-500 text-sm">
-                      Next message in {currentlyRunning.delayCountdown}s...
-                    </div>
-                  )}
+              <div className="text-sm text-gray-600 space-y-1">
+                <div>Conversation {currentlyRunning.conversationId} / 4</div>
+                <div>Message Delay: {messageDelay}s</div>
+                <div className="text-xs bg-gray-100 dark:bg-gray-800 p-2 rounded">
+                  Config: Typos: {currentlyRunning.config?.typoFrequency?.toFixed(2)}, 
+                  Lowercase: {currentlyRunning.config?.lowercaseChance?.toFixed(2)}
                 </div>
               </div>
             </div>
             
-            {/* Live Notes Sidebar */}
-            <div className="w-80 border-l bg-gray-50 dark:bg-gray-800 flex flex-col">
-              <div className="p-4 border-b">
-                <h3 className="text-lg font-semibold">Live Notes</h3>
-                <p className="text-xs text-gray-600 mt-1">Take notes while watching the conversation</p>
-              </div>
-              
-              <div className="flex-1 p-4">
-                <textarea
-                  value={notes}
-                  onChange={(e) => setNotes(e.target.value)}
-                  placeholder={`Take notes on this conversation...
-
-Examples:
-• Response feels too formal
-• Good use of casual language
-• Missing personality 
-• Perfect energy match
-• Can't have similar responses twice in a row
-• Use more 'ur', 'u', 'prolly'`}
-                  className="w-full h-full p-3 text-sm border rounded-md resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  style={{ minHeight: '300px' }}
-                />
-              </div>
-              
-              <div className="p-4 border-t text-xs text-gray-500">
-                <div className="flex items-center justify-between">
-                  <span>Auto-saves as you type</span>
-                  <span>{notes.length} characters</span>
-                </div>
-                <div className="mt-2 text-green-600">
-                  ✓ Notes saved locally
-                </div>
+            <div className="p-4 max-h-96 overflow-y-auto">
+              <div className="space-y-3">
+                {liveMessages.map((msg, index) => (
+                  <div key={index} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                    <div className={`max-w-xs p-3 rounded-lg text-sm ${
+                      msg.role === 'user' 
+                        ? 'bg-blue-500 text-white' 
+                        : 'bg-gray-100 dark:bg-gray-800 border'
+                    }`}>
+                      {msg.content}
+                      {msg.isTyping && (
+                        <div className="flex items-center mt-1">
+                          <div className="flex space-x-1">
+                            <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
+                            <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+                            <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+                
+                {currentlyRunning?.delayCountdown && (
+                  <div className="text-center text-gray-500 text-sm">
+                    Next message in {currentlyRunning.delayCountdown}s...
+                  </div>
+                )}
               </div>
             </div>
           </div>

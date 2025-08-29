@@ -12,6 +12,17 @@ const chatEngine = new UnifiedChatEngine();
 const scorer = new ResponseScorer();
 const configManager = new ConfigManager();
 
+// Initialize chat engine with Grok API key
+(async () => {
+  const grokApiKey = process.env.GROK_API_KEY;
+  if (grokApiKey) {
+    await chatEngine.initialize(grokApiKey);
+    console.log('[LIVE-EDIT] ✅ Chat engine initialized with Grok API');
+  } else {
+    console.warn('[LIVE-EDIT] ⚠️ No GROK_API_KEY found - using fallback responses');
+  }
+})();
+
 export async function GET(req: NextRequest) {
   return NextResponse.json({
     status: 'Live Edit API Active',
