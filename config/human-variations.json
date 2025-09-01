@@ -1,15 +1,15 @@
 {
   "typoFrequency": 0.3,
-  "lowercaseChance": 0.48827359555308486,
+  "lowercaseChance": 0.5,
   "fillers": {
     "startChance": 0.6,
     "middleChance": 0.4,
-    "endChance": 0.7274445114465012
+    "endChance": 0.7
   },
   "personality": {
     "followUpChance": 0.15,
     "capsEmphasisChance": 0.3,
-    "catchphraseChance": 0.48447220951876824
+    "catchphraseChance": 0.4
   },
   "contextual": {
     "sexualEndingsOnly": true,
@@ -21,7 +21,7 @@
     "teasing": 0.4,
     "bold": 0.3
   },
-  "lastUpdated": "2025-08-29T10:55:10.424Z",
+  "lastUpdated": "2025-08-29T11:44:54.940Z",
   "version": "1.0.0",
   "fillerChances": {
     "startChance": 0.6,

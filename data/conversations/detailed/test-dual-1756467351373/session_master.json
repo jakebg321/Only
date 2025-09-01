@@ -1,0 +1,32 @@
+{
+  "sessionId": "test-dual-1756467351373",
+  "startTime": 1756467351377,
+  "lastUpdate": 1756467361518,
+  "messageCount": 3,
+  "messages": [
+    {
+      "timestamp": 1756467351377,
+      "user": "hey what's up",
+      "grok": "hey you 😊 what's your name?",
+      "undertone": "UNKNOWN",
+      "confidence": 0.5,
+      "score": 7
+    },
+    {
+      "timestamp": 1756467360294,
+      "user": "just bored",
+      "grok": "just bored? come on there's gotta be more...",
+      "undertone": "LONELY_SINGLE",
+      "confidence": 0.6,
+      "score": 7.5
+    },
+    {
+      "timestamp": 1756467361518,
+      "user": "yeah maybe lol",
+      "grok": "maybe? you're being mysterious now 😏",
+      "undertone": "CURIOUS_TOURIST",
+      "confidence": 0.7,
+      "score": 8
+    }
+  ]
+}

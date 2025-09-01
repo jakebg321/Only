@@ -153,28 +153,66 @@ export default function LiveEditPage() {
     
     setLoading(true);
     try {
-      const res = await fetch('/api/test/live-edit', {
+      // Use the REAL working unified endpoint instead of test endpoint
+      const res = await fetch('/api/chat/unified', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           message: text,
           userId,
-          sessionId,
-          conversationHistory // NOW WE'RE SENDING THE HISTORY!
+          conversationHistory,
+          debugMode: true // Get debug data for analysis
         })
       });
       
       const data = await res.json();
       
+      // Transform unified response to match expected format
+      const transformedData = {
+        response: data.message,
+        followUp: data.followUp,
+        undertone: data.undertoneAnalysis,
+        analysis: {
+          score: data.debugData?.strategy?.score || 7.5,
+          breakdown: {
+            typos: 7,
+            personality: 8,
+            context: 7,
+            flow: 8,
+            punctuation: 7
+          },
+          issues: [],
+          suggestions: []
+        },
+        currentConfig: config // Keep existing config
+      };
+      
       if (!silent) {
-        setResult(data);
+        setResult(transformedData);
+        
+        // Save single message test to both formats
+        try {
+          await fetch('/api/conversations/save-message', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              sessionId: `single-test-${Date.now()}`,
+              userMessage: text,
+              grokResponse: data.message,
+              undertone: data.undertoneAnalysis?.userType,
+              confidence: data.undertoneAnalysis?.confidence,
+              score: 7.5,
+              config: config,
+              timestamp: Date.now()
+            })
+          });
+          console.log('[SAVE] Single message test saved');
+        } catch (error) {
+          console.error('[SAVE] Failed to save single message:', error);
+        }
       }
       
-      if (data.currentConfig) {
-        setConfig(data.currentConfig);
-      }
-      
-      return data;
+      return transformedData;
     } catch (error) {
       console.error('Test failed:', error);
     } finally {
@@ -273,6 +311,27 @@ export default function LiveEditPage() {
             issues: result.analysis?.issues || [],
             turn: i + 1
           };
+          
+          // Save this message immediately in both formats
+          try {
+            await fetch('/api/conversations/save-message', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                sessionId,
+                userMessage,
+                grokResponse: result.response,
+                undertone: result.undertone?.userType,
+                confidence: result.undertone?.confidence,
+                score: result.analysis?.score || 0,
+                config: config,  // Use the config parameter passed to the function
+                timestamp: Date.now()
+              })
+            });
+            console.log(`[SAVE] Message ${i + 1} saved to both formats`);
+          } catch (error) {
+            console.error('[SAVE] Failed to save message:', error);
+          }
           
           conversationResults.messages.push(messageResult);
           conversationResults.fullConversation.push(

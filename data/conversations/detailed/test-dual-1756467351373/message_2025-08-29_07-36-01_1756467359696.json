@@ -1,0 +1,18 @@
+{
+  "timestamp": 1756467361518,
+  "datetime": "2025-08-29T11:36:01.518Z",
+  "sessionId": "test-dual-1756467351373",
+  "exchange": {
+    "user": "yeah maybe lol",
+    "grok": "maybe? you're being mysterious now 😏"
+  },
+  "analysis": {
+    "undertone": "CURIOUS_TOURIST",
+    "confidence": 0.7,
+    "score": 8
+  },
+  "config": {
+    "typoFrequency": 0.3,
+    "lowercaseChance": 0.5
+  }
+}

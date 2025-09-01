@@ -1,0 +1,15 @@
+{
+  "timestamp": 1756467896666,
+  "datetime": "2025-08-29T11:44:56.666Z",
+  "sessionId": "single-test-1756467896666",
+  "exchange": {
+    "user": "test",
+    "grok": "hey, just checking in with a test message? or fr did u mean something else? lol what's on ur mind"
+  },
+  "analysis": {
+    "undertone": "UNKNOWN",
+    "confidence": 0.3,
+    "score": 7.5
+  },
+  "config": null
+}

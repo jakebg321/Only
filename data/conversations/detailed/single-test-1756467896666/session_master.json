@@ -1,0 +1,16 @@
+{
+  "sessionId": "single-test-1756467896666",
+  "startTime": 1756467896666,
+  "lastUpdate": 1756467896666,
+  "messageCount": 1,
+  "messages": [
+    {
+      "timestamp": 1756467896666,
+      "user": "test",
+      "grok": "hey, just checking in with a test message? or fr did u mean something else? lol what's on ur mind",
+      "undertone": "UNKNOWN",
+      "confidence": 0.3,
+      "score": 7.5
+    }
+  ]
+}

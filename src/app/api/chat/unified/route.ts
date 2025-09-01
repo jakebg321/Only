@@ -27,11 +27,15 @@ export async function POST(request: NextRequest) {
     const {
       userId,
       message,
-      conversationHistory = [],
       debugMode = false,
       responseTime,
       typingStops
     } = body;
+    
+    // Ensure conversationHistory is always an array
+    const conversationHistory = Array.isArray(body.conversationHistory) 
+      ? body.conversationHistory 
+      : [];
     
     // Validate required fields
     if (!userId || !message) {

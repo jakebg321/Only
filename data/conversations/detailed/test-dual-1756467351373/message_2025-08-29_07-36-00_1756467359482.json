@@ -1,0 +1,18 @@
+{
+  "timestamp": 1756467360294,
+  "datetime": "2025-08-29T11:36:00.294Z",
+  "sessionId": "test-dual-1756467351373",
+  "exchange": {
+    "user": "just bored",
+    "grok": "just bored? come on there's gotta be more..."
+  },
+  "analysis": {
+    "undertone": "LONELY_SINGLE",
+    "confidence": 0.6,
+    "score": 7.5
+  },
+  "config": {
+    "typoFrequency": 0.3,
+    "lowercaseChance": 0.5
+  }
+}
